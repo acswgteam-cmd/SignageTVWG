@@ -1,7 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { Plus, Trash2, Eye, Upload, Image as ImageIcon, Calendar, Monitor } from 'lucide-react';
+import { Plus, Trash2, Eye, Upload, Image as ImageIcon, Calendar, Monitor, Download, Wifi } from 'lucide-react';
 import { SignageData, DEFAULT_DATA } from '../types';
 import { saveSignage, deleteSignage } from '../utils/storage';
+import { SyncModal } from './SyncModal';
 
 interface AdminDashboardProps {
   signages: SignageData[];
@@ -13,7 +14,9 @@ interface AdminDashboardProps {
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ signages, onRefresh, onSelect, onSwitchToPublic }) => {
   const [formData, setFormData] = useState(DEFAULT_DATA);
   const [bgPreview, setBgPreview] = useState<string | undefined>(undefined);
+  const [isSyncOpen, setIsSyncOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const importInputRef = useRef<HTMLInputElement>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -54,6 +57,48 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ signages, onRefr
     }
   };
 
+  // --- EXPORT FUNCTION ---
+  const handleExport = () => {
+    const dataStr = JSON.stringify(signages, null, 2);
+    const blob = new Blob([dataStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `signage_backup_${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // --- IMPORT FUNCTION ---
+  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const json = event.target?.result as string;
+        const parsedData = JSON.parse(json);
+        
+        if (Array.isArray(parsedData)) {
+            // Save directly to localStorage key defined in utils/storage
+            localStorage.setItem('signage_list_v2', JSON.stringify(parsedData));
+            alert('Data berhasil di-import! Halaman akan dimuat ulang.');
+            onRefresh();
+            window.location.reload(); 
+        } else {
+            alert('Format file JSON tidak valid.');
+        }
+      } catch (error) {
+        console.error(error);
+        alert('Gagal membaca file backup.');
+      }
+    };
+    reader.readAsText(file);
+    if (importInputRef.current) importInputRef.current.value = '';
+  };
+
   return (
     <div className="min-h-screen bg-gray-50 p-6 md:p-12">
       <div className="max-w-7xl mx-auto space-y-12">
@@ -62,16 +107,55 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ signages, onRefr
         <header className="mb-8 border-b border-gray-200 pb-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">Signage Admin</h1>
-            <p className="text-gray-500">Buat signage baru atau pilih dari daftar. Data akan otomatis terhapus setelah 7 hari.</p>
+            <p className="text-gray-500">Buat signage baru atau pilih dari daftar. Data tersimpan lokal di browser ini.</p>
           </div>
-          <button 
-            onClick={onSwitchToPublic}
-            className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg font-medium transition-colors text-sm"
-          >
-            <Monitor size={18} />
-            Mode Layar Tamu
-          </button>
+          
+          <div className="flex flex-wrap gap-2">
+            {/* Action Buttons Group */}
+            <button 
+                onClick={() => setIsSyncOpen(true)}
+                className="flex items-center gap-2 px-3 py-2 bg-blue-100 text-blue-700 hover:bg-blue-200 rounded-lg text-sm font-bold transition-colors border border-blue-200"
+                title="Sync Wireless ke TV"
+            >
+                <Wifi size={16} /> Broadcast ke TV
+            </button>
+
+            <button 
+                onClick={handleExport}
+                className="flex items-center gap-2 px-3 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg text-sm font-medium transition-colors"
+                title="Download Backup Data"
+            >
+                <Download size={16} /> Backup
+            </button>
+            
+            <button 
+                onClick={() => importInputRef.current?.click()}
+                className="flex items-center gap-2 px-3 py-2 bg-gray-200 text-gray-700 hover:bg-gray-300 rounded-lg text-sm font-medium transition-colors"
+                title="Upload Backup Data"
+            >
+                <Upload size={16} /> Restore
+            </button>
+            <input type="file" ref={importInputRef} onChange={handleImport} className="hidden" accept=".json" />
+
+            <div className="w-px h-8 bg-gray-300 mx-2 hidden md:block"></div>
+
+            <button 
+              onClick={onSwitchToPublic}
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-lg font-medium transition-colors text-sm"
+            >
+              <Monitor size={18} />
+              Mode Layar Tamu
+            </button>
+          </div>
         </header>
+
+        {/* SYNC MODAL */}
+        <SyncModal 
+            isOpen={isSyncOpen}
+            onClose={() => setIsSyncOpen(false)}
+            mode="sender"
+            dataToSync={signages}
+        />
 
         <div className="grid lg:grid-cols-3 gap-12">
           {/* LEFT COLUMN: CREATE FORM */}
@@ -127,7 +211,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ signages, onRefr
                         <img src={bgPreview} className="absolute inset-0 w-full h-full object-cover opacity-50" />
                       ) : null}
                       <div className="relative z-10 flex flex-col items-center">
-                        <Upload size={20} className="text-gray-400 mb-1" />
+                        <ImageIcon size={20} className="text-gray-400 mb-1" />
                         <span className="text-xs text-gray-500 font-medium">Upload (Max 3MB)</span>
                       </div>
                    </div>
@@ -162,7 +246,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ signages, onRefr
              
              {signages.length === 0 ? (
                <div className="bg-white rounded-xl p-12 text-center text-gray-400 border border-dashed border-gray-300">
-                 Belum ada data signage. Silakan buat baru.
+                 <div className="flex flex-col items-center gap-3">
+                    <Monitor className="text-gray-300" size={48} />
+                    <p>Belum ada data signage.</p>
+                 </div>
                </div>
              ) : (
                <div className="grid sm:grid-cols-2 gap-6">
