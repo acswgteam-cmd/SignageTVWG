@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Peer } from 'peerjs';
+import Peer from 'peerjs';
 import { Wifi, X, ArrowRight, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { SignageData } from '../types';
 
@@ -13,7 +13,7 @@ interface SyncModalProps {
 
 // Helper to generate a short random code
 const generateCode = () => {
-  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // No I, O, 1, 0 to avoid confusion
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // No I, O, 1, 0
   let result = '';
   for (let i = 0; i < 5; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -32,7 +32,8 @@ export const SyncModal: React.FC<SyncModalProps> = ({
   const [targetCode, setTargetCode] = useState('');
   const [status, setStatus] = useState<'idle' | 'connecting' | 'transferring' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
-  const peerRef = useRef<Peer | null>(null);
+  // Use any type for peer instance to avoid strict type conflicts with different import styles
+  const peerRef = useRef<any>(null);
 
   // Initialize Peer
   useEffect(() => {
@@ -47,87 +48,102 @@ export const SyncModal: React.FC<SyncModalProps> = ({
         return;
     }
 
-    const code = generateCode();
-    // We use a prefix to ensure uniqueness on the public PeerJS server
-    const fullId = `signage-app-${code}`;
+    try {
+        const code = generateCode();
+        // We use a prefix to ensure uniqueness on the public PeerJS server
+        const fullId = `signage-app-${code}`;
 
-    // If receiver, we don't strictly need a fixed ID, but good for debugging. 
-    // If sender, this ID is what the receiver connects to.
-    const myId = mode === 'sender' ? fullId : undefined;
+        // If receiver, we don't strictly need a fixed ID, but good for debugging. 
+        // If sender, this ID is what the receiver connects to.
+        const myId = mode === 'sender' ? fullId : undefined;
 
-    const peer = new Peer(myId, {
-      debug: 1
-    });
-
-    peer.on('open', (id) => {
-      // If sender, we display the short code derived from the ID
-      if (mode === 'sender') {
-          setPeerId(code);
-      }
-    });
-
-    peer.on('connection', (conn) => {
-      // SENDER LOGIC: When a receiver connects
-      if (mode === 'sender' && dataToSync) {
-        setStatus('transferring');
-        conn.on('open', () => {
-          // Send data
-          conn.send(dataToSync);
-          setTimeout(() => {
-              setStatus('success');
-          }, 500);
+        // Robust instantiation
+        const PeerClass = (Peer as any).default || Peer;
+        const peer = new PeerClass(myId, {
+            debug: 1
         });
-      }
-    });
 
-    peer.on('error', (err) => {
-      console.error(err);
-      setStatus('error');
-      setErrorMessage('Gagal terhubung ke server jaringan.');
-    });
+        peer.on('open', (id: string) => {
+            if (mode === 'sender') {
+                setPeerId(code);
+            }
+        });
 
-    peerRef.current = peer;
+        peer.on('connection', (conn: any) => {
+            if (mode === 'sender' && dataToSync) {
+                setStatus('transferring');
+                conn.on('open', () => {
+                    conn.send(dataToSync);
+                    setTimeout(() => {
+                        setStatus('success');
+                    }, 500);
+                });
+            }
+        });
 
-    return () => {
-      peer.destroy();
-    };
+        peer.on('error', (err: any) => {
+            console.error('Peer error:', err);
+            // Ignore trivial errors like 'lost connection' if we are already success
+            if (status === 'success') return;
+            
+            setStatus('error');
+            setErrorMessage('Gagal terhubung ke server jaringan.');
+        });
+
+        peerRef.current = peer;
+
+        return () => {
+            peer.destroy();
+        };
+    } catch (e) {
+        console.error("PeerJS init error:", e);
+        setErrorMessage("Gagal memuat modul jaringan.");
+        setStatus('error');
+    }
   }, [isOpen, mode, dataToSync]);
 
   const handleConnect = () => {
     if (!targetCode || !peerRef.current) return;
     
-    setStatus('connecting');
-    const fullTargetId = `signage-app-${targetCode.toUpperCase()}`;
-    const conn = peerRef.current.connect(fullTargetId);
+    try {
+        setStatus('connecting');
+        const fullTargetId = `signage-app-${targetCode.toUpperCase()}`;
+        const conn = peerRef.current.connect(fullTargetId);
 
-    conn.on('open', () => {
-      setStatus('transferring');
-    });
+        conn.on('open', () => {
+            setStatus('transferring');
+        });
 
-    conn.on('data', (data: any) => {
-      if (Array.isArray(data)) {
-        if (onDataReceived) {
-            onDataReceived(data);
-            setStatus('success');
-        }
-      } else {
-          setStatus('error');
-          setErrorMessage('Data yang diterima tidak valid.');
-      }
-    });
+        conn.on('data', (data: any) => {
+            if (Array.isArray(data)) {
+                if (onDataReceived) {
+                    onDataReceived(data);
+                    setStatus('success');
+                }
+            } else {
+                setStatus('error');
+                setErrorMessage('Data yang diterima tidak valid.');
+            }
+        });
 
-    conn.on('error', (err) => {
-        setStatus('error');
-        setErrorMessage('Koneksi terputus atau kode salah.');
-    });
-
-    // Timeout fallback
-    setTimeout(() => {
-        if (status === 'connecting') {
+        conn.on('error', (err: any) => {
+            console.error("Connection error:", err);
             setStatus('error');
-            setErrorMessage('Waktu habis. Pastikan Laptop sudah membuka menu Broadcast.');
-        }
-    }, 10000);
+            setErrorMessage('Koneksi terputus atau kode salah.');
+        });
+
+        // Timeout fallback
+        setTimeout(() => {
+            if (status === 'connecting') {
+                setStatus('error');
+                setErrorMessage('Waktu habis. Pastikan Laptop sudah membuka menu Broadcast.');
+            }
+        }, 15000);
+    } catch (e) {
+        console.error("Connect error:", e);
+        setStatus('error');
+        setErrorMessage('Terjadi kesalahan internal.');
+    }
   };
 
   if (!isOpen) return null;
