@@ -2,9 +2,6 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Wifi, X, ArrowRight, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { SignageData } from '../types';
 
-// Declare Peer as a global variable since we load it via <script> tag
-declare const Peer: any;
-
 interface SyncModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -50,20 +47,19 @@ export const SyncModal: React.FC<SyncModalProps> = ({
     }
 
     try {
-        if (typeof Peer === 'undefined') {
-            throw new Error("Library PeerJS belum dimuat. Periksa koneksi internet.");
+        // Access Peer from window object safely
+        const PeerClass = (window as any).Peer;
+
+        if (!PeerClass) {
+            throw new Error("Library PeerJS belum dimuat. Cek koneksi internet atau refresh halaman.");
         }
 
         const code = generateCode();
-        // We use a prefix to ensure uniqueness on the public PeerJS server
         const fullId = `signage-app-${code}`;
-
-        // If receiver, we don't strictly need a fixed ID, but good for debugging. 
-        // If sender, this ID is what the receiver connects to.
         const myId = mode === 'sender' ? fullId : undefined;
 
         // Instantiate global Peer
-        const peer = new Peer(myId, {
+        const peer = new PeerClass(myId, {
             debug: 1
         });
 
@@ -87,9 +83,7 @@ export const SyncModal: React.FC<SyncModalProps> = ({
 
         peer.on('error', (err: any) => {
             console.error('Peer error:', err);
-            // Ignore trivial errors like 'lost connection' if we are already success
             if (status === 'success') return;
-            
             setStatus('error');
             setErrorMessage('Gagal terhubung ke server jaringan.');
         });
@@ -136,7 +130,6 @@ export const SyncModal: React.FC<SyncModalProps> = ({
             setErrorMessage('Koneksi terputus atau kode salah.');
         });
 
-        // Timeout fallback
         setTimeout(() => {
             if (status === 'connecting') {
                 setStatus('error');
@@ -177,7 +170,6 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                     : 'Masukkan kode yang muncul di layar Laptop Anda untuk menyalin data.'}
             </p>
 
-            {/* SENDER UI */}
             {mode === 'sender' && (
                 <div className="bg-gray-100 p-6 rounded-xl border-2 border-dashed border-gray-300 mb-6">
                     {peerId ? (
@@ -193,7 +185,6 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                 </div>
             )}
 
-            {/* RECEIVER UI */}
             {mode === 'receiver' && status !== 'success' && (
                 <div className="space-y-4 mb-6">
                     <input 
@@ -215,7 +206,6 @@ export const SyncModal: React.FC<SyncModalProps> = ({
                 </div>
             )}
 
-            {/* STATUS FEEDBACK */}
             {status === 'transferring' && (
                 <div className="text-blue-600 font-medium animate-pulse mb-4">
                     Mengirim data... Jangan tutup jendela ini.
