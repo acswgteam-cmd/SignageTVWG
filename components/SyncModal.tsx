@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import Peer from 'peerjs';
 import { Wifi, X, ArrowRight, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { SignageData } from '../types';
+
+// Declare Peer as a global variable since we load it via <script> tag
+declare const Peer: any;
 
 interface SyncModalProps {
   isOpen: boolean;
@@ -32,7 +34,6 @@ export const SyncModal: React.FC<SyncModalProps> = ({
   const [targetCode, setTargetCode] = useState('');
   const [status, setStatus] = useState<'idle' | 'connecting' | 'transferring' | 'success' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState('');
-  // Use any type for peer instance to avoid strict type conflicts with different import styles
   const peerRef = useRef<any>(null);
 
   // Initialize Peer
@@ -49,6 +50,10 @@ export const SyncModal: React.FC<SyncModalProps> = ({
     }
 
     try {
+        if (typeof Peer === 'undefined') {
+            throw new Error("Library PeerJS belum dimuat. Periksa koneksi internet.");
+        }
+
         const code = generateCode();
         // We use a prefix to ensure uniqueness on the public PeerJS server
         const fullId = `signage-app-${code}`;
@@ -57,9 +62,8 @@ export const SyncModal: React.FC<SyncModalProps> = ({
         // If sender, this ID is what the receiver connects to.
         const myId = mode === 'sender' ? fullId : undefined;
 
-        // Robust instantiation
-        const PeerClass = (Peer as any).default || Peer;
-        const peer = new PeerClass(myId, {
+        // Instantiate global Peer
+        const peer = new Peer(myId, {
             debug: 1
         });
 
@@ -95,9 +99,9 @@ export const SyncModal: React.FC<SyncModalProps> = ({
         return () => {
             peer.destroy();
         };
-    } catch (e) {
+    } catch (e: any) {
         console.error("PeerJS init error:", e);
-        setErrorMessage("Gagal memuat modul jaringan.");
+        setErrorMessage(e.message || "Gagal memuat modul jaringan.");
         setStatus('error');
     }
   }, [isOpen, mode, dataToSync]);
