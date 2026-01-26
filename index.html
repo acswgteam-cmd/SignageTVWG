@@ -5,8 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Welcome Signage</title>
     
-    <!-- Polyfill global for libraries that expect it (common cause of white screen) -->
+    <!-- ERROR HANDLER: Menampilkan error di layar jika terjadi crash (Anti Blank Putih) -->
     <script>
+      window.onerror = function(message, source, lineno, colno, error) {
+        const errorDiv = document.getElementById('error-display') || document.createElement('div');
+        errorDiv.id = 'error-display';
+        errorDiv.style.position = 'fixed';
+        errorDiv.style.top = '0';
+        errorDiv.style.left = '0';
+        errorDiv.style.width = '100%';
+        errorDiv.style.padding = '20px';
+        errorDiv.style.background = '#fee2e2';
+        errorDiv.style.color = '#991b1b';
+        errorDiv.style.zIndex = '9999';
+        errorDiv.style.fontFamily = 'monospace';
+        errorDiv.innerHTML = '<strong>System Error:</strong><br>' + message;
+        document.body.appendChild(errorDiv);
+        console.error(error);
+      };
+      
+      // Polyfill
       window.global = window;
       window.process = { env: { NODE_ENV: 'production' } };
     </script>
@@ -28,8 +46,8 @@
             },
             colors: {
               brand: {
-                dark: '#002678', // Deep blue
-                light: '#0044cc', // Lighter blue for gradient
+                dark: '#002678',
+                light: '#0044cc',
                 accent: '#ffffff',
               }
             }
@@ -37,34 +55,20 @@
         }
       }
     </script>
-    <style>
-      /* Custom scrollbar for the admin panel */
-      ::-webkit-scrollbar {
-        width: 8px;
+    
+    <!-- STRICT IMPORT MAP: Only React 18.2.0 -->
+    <script type="importmap">
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react/": "https://esm.sh/react@18.2.0/",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "react-dom": "https://esm.sh/react-dom@18.2.0",
+        "lucide-react": "https://esm.sh/lucide-react@0.263.1"
       }
-      ::-webkit-scrollbar-track {
-        background: #f1f1f1; 
-      }
-      ::-webkit-scrollbar-thumb {
-        background: #888; 
-        border-radius: 4px;
-      }
-      ::-webkit-scrollbar-thumb:hover {
-        background: #555; 
-      }
-    </style>
-  <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@18.2.0",
-    "react/": "https://esm.sh/react@18.2.0/",
-    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-    "react-dom": "https://esm.sh/react-dom@18.2.0",
-    "lucide-react": "https://esm.sh/lucide-react@0.292.0"
-  }
-}
-</script>
-</head>
+    }
+    </script>
+  </head>
   <body>
     <div id="root"></div>
   </body>
