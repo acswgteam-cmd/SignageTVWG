@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { signageService, saveSupabaseConfig, isSupabaseConfigured, clearSupabaseConfig } from '../services/supabase';
+import { signageService, saveSupabaseConfig, isSupabaseConfigured, getActiveUrl, getActiveKey } from '../services/supabase';
 import { Signage, SignageInsert } from '../types';
 import { SignagePreview } from '../components/SignagePreview';
 import { Monitor, Save, Trash2, Plus, Image as ImageIcon, Loader2, Settings, Database, AlertCircle, ArrowRight } from 'lucide-react';
@@ -10,11 +10,13 @@ export const Editor: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  
+  // Initialize with configured check. Since we hardcoded keys, this should be true.
   const [showConfig, setShowConfig] = useState(!isSupabaseConfigured());
 
-  // Config State
-  const [configUrl, setConfigUrl] = useState(localStorage.getItem('sb_url') || '');
-  const [configKey, setConfigKey] = useState(localStorage.getItem('sb_key') || '');
+  // Config State (Populate with active values so user sees it's connected)
+  const [configUrl, setConfigUrl] = useState(getActiveUrl());
+  const [configKey, setConfigKey] = useState(getActiveKey());
 
   // Form State
   const [formData, setFormData] = useState<SignageInsert>({
