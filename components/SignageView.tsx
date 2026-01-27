@@ -11,7 +11,7 @@ export const SignageView: React.FC<SignageViewProps> = ({ data, onBack }) => {
   const [showControls, setShowControls] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
 
-  // WAKE LOCK
+  // WAKE LOCK (Supaya layar tidak mati otomatis)
   useEffect(() => {
     let wakeLock: any = null;
     const requestWakeLock = async () => {
@@ -44,13 +44,23 @@ export const SignageView: React.FC<SignageViewProps> = ({ data, onBack }) => {
     return () => window.removeEventListener('mousemove', handleMove);
   }, []);
 
+  // Background Image Style (Jika ada)
+  const bgStyle = data.backgroundImage 
+    ? { backgroundImage: `url(${data.backgroundImage})`, backgroundSize: 'cover', backgroundPosition: 'center' } 
+    : { backgroundColor: '#ffffff' };
+
   return (
-    <div className="relative w-full h-screen overflow-hidden flex flex-col justify-center items-center select-none bg-white">
+    <div className="relative w-full h-screen overflow-hidden flex flex-col justify-center items-center select-none" style={bgStyle}>
       
-      {/* CONTROLS */}
+      {/* Jika ada background image, beri overlay putih tipis supaya teks terbaca */}
+      {data.backgroundImage && (
+        <div className="absolute inset-0 bg-white/80 z-0"></div>
+      )}
+
+      {/* CONTROLS (Muncul saat mouse digerakkan) */}
       <div className={`fixed top-6 right-6 z-50 flex gap-3 transition-opacity duration-500 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         {!isFullscreen && (
-          <button onClick={onBack} className="bg-gray-100/80 backdrop-blur hover:bg-gray-200 text-gray-800 px-6 py-3 rounded-full flex items-center gap-2 text-sm font-medium transition-all shadow-sm">
+          <button onClick={onBack} className="bg-white/90 backdrop-blur hover:bg-gray-100 text-gray-800 px-6 py-3 rounded-full flex items-center gap-2 text-sm font-medium transition-all shadow-md border border-gray-200">
             <ArrowLeft size={18} /> Kembali
           </button>
         )}
@@ -59,25 +69,25 @@ export const SignageView: React.FC<SignageViewProps> = ({ data, onBack }) => {
         </button>
       </div>
 
-      {/* DESIGN: Blank Putih Minimalist */}
-      <div className="max-w-[90vw] w-full flex flex-col items-center justify-center text-center animate-fade-in">
+      {/* CONTENT UTAMA - Layar Putih Minimalis */}
+      <div className="relative z-10 max-w-[90vw] w-full flex flex-col items-center justify-center text-center animate-fade-in px-4">
         
-        {/* Welcome Text */}
-        <h2 className="text-3xl md:text-4xl lg:text-5xl font-light tracking-[0.4em] uppercase text-gray-500 mb-12">
-          {data.welcomeLabel}
+        {/* Welcome Text (Bisa diedit Admin) */}
+        <h2 className="text-2xl md:text-3xl lg:text-4xl font-light tracking-[0.3em] uppercase text-gray-500 mb-8 md:mb-12">
+          {data.welcomeLabel || "WELCOME"}
         </h2>
 
         {/* Separator Line */}
-        <div className="w-32 h-[2px] bg-gray-200 mb-12"></div>
+        <div className="w-24 md:w-32 h-[2px] bg-gray-300 mb-8 md:mb-12"></div>
 
-        {/* Guest Name */}
-        <h1 className="text-6xl md:text-8xl lg:text-9xl font-bold leading-none text-black mb-10 tracking-tight">
+        {/* Nama Tamu (Bisa diedit Admin) */}
+        <h1 className="text-5xl md:text-7xl lg:text-9xl font-bold leading-tight text-gray-900 mb-6 md:mb-10 tracking-tight drop-shadow-sm">
           {data.guestName}
         </h1>
 
-        {/* Instansi */}
+        {/* Nama Instansi (Bisa diedit Admin) */}
         {data.subText && (
-            <h3 className="text-2xl md:text-4xl lg:text-5xl text-gray-600 font-medium mt-4">
+            <h3 className="text-xl md:text-3xl lg:text-4xl text-gray-600 font-medium mt-2 md:mt-4 max-w-4xl mx-auto">
                 {data.subText}
             </h3>
         )}
