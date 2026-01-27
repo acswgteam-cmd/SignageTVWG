@@ -58,9 +58,14 @@ export const signageService = {
 
   async create(signage: SignageInsert) {
     if (!supabase) throw new Error("Supabase not configured");
+    
+    // Generate UUID client-side because the table definition (id text primary key)
+    // does not have a default value generator like gen_random_uuid()
+    const newId = crypto.randomUUID();
+
     const { data, error } = await supabase
       .from('signages')
-      .insert([signage])
+      .insert([{ ...signage, id: newId }])
       .select()
       .single();
     
