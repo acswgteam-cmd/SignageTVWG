@@ -1,112 +1,88 @@
-import React, { useState } from 'react';
-import { Eye, Monitor, Lock, Wifi } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Monitor, Lock, Database, RefreshCw } from 'lucide-react';
 import { SignageData } from '../types';
+import { getSignages } from '../utils/storage';
 import { SyncModal } from './SyncModal';
 
 interface PublicDashboardProps {
-  signages: SignageData[];
+  signages: SignageData[]; // Initial data
   onSelect: (data: SignageData) => void;
   onGoToAdmin: () => void;
 }
 
-export const PublicDashboard: React.FC<PublicDashboardProps> = ({ signages, onSelect, onGoToAdmin }) => {
+export const PublicDashboard: React.FC<PublicDashboardProps> = ({ signages: initialSignages, onSelect, onGoToAdmin }) => {
   const [isSyncOpen, setIsSyncOpen] = useState(false);
+  const [data, setData] = useState<SignageData[]>(initialSignages);
+  const [loading, setLoading] = useState(false);
 
-  const handleDataReceived = (newData: SignageData[]) => {
-      // Save directly to localStorage
-      localStorage.setItem('signage_list_v2', JSON.stringify(newData));
-      // Reload to refresh the list from storage
-      window.location.reload();
+  const refreshData = async () => {
+    setLoading(true);
+    const newData = await getSignages();
+    setData(newData);
+    setLoading(false);
   };
 
+  useEffect(() => {
+    refreshData();
+    // Auto refresh every 30 seconds if Supabase is connected
+    const interval = setInterval(refreshData, 30000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
-    <div className="min-h-screen bg-gray-100 p-6 md:p-12">
+    <div className="min-h-screen bg-white p-6 md:p-12">
       <div className="max-w-7xl mx-auto space-y-8">
         
-        {/* Header */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-300 pb-6">
+        <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-100 pb-6">
           <div>
-            <h1 className="text-3xl font-bold text-gray-800 flex items-center gap-3">
-              <Monitor className="text-blue-600" size={32} />
-              Display Selection
+            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+              <Monitor className="text-black" size={32} />
+              Layar Tamu (Public)
             </h1>
-            <p className="text-gray-500 mt-1">Pilih tampilan signage untuk ditampilkan di layar utama.</p>
+            <p className="text-gray-500 mt-1">Pilih data untuk ditampilkan.</p>
           </div>
           
           <div className="flex items-center gap-3">
+             <button onClick={refreshData} className={`p-2 rounded-full hover:bg-gray-100 text-gray-600 ${loading ? 'animate-spin' : ''}`}>
+                <RefreshCw size={20} />
+             </button>
              <button 
                 onClick={() => setIsSyncOpen(true)}
-                className="flex items-center gap-2 text-sm text-blue-700 bg-blue-100 hover:bg-blue-200 transition-colors px-4 py-2 rounded-lg font-bold"
+                className="flex items-center gap-2 text-sm text-gray-600 hover:text-black hover:bg-gray-50 transition-colors px-4 py-2 rounded-lg font-medium border border-gray-200"
              >
-                <Wifi size={16} /> Sync dari Laptop
+                <Database size={16} /> Setup Koneksi
              </button>
              <button 
                 onClick={onGoToAdmin}
-                className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 transition-colors px-4 py-2 rounded-lg border border-transparent hover:border-gray-300"
+                className="flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 transition-colors px-4 py-2"
              >
-                <Lock size={16} /> Admin Login
+                <Lock size={16} /> Admin
              </button>
           </div>
         </header>
 
-        <SyncModal 
-            isOpen={isSyncOpen}
-            onClose={() => setIsSyncOpen(false)}
-            mode="receiver"
-            onDataReceived={handleDataReceived}
-        />
+        <SyncModal isOpen={isSyncOpen} onClose={() => setIsSyncOpen(false)} />
 
         {/* Content */}
-        {signages.length === 0 ? (
-           <div className="flex flex-col items-center justify-center py-20 bg-white rounded-2xl shadow-sm border border-gray-200">
-             <div className="text-gray-300 mb-4">
-               <Monitor size={64} />
-             </div>
-             <p className="text-xl font-medium text-gray-500">Tidak ada signage aktif.</p>
-             <p className="text-gray-400">Silakan hubungi admin untuk membuat data baru atau Sync dari Laptop.</p>
-             <button 
-                onClick={() => setIsSyncOpen(true)}
-                className="mt-6 px-6 py-3 bg-blue-600 text-white font-bold rounded-full hover:bg-blue-700 transition-all flex items-center gap-2"
-             >
-                <Wifi size={20} /> Mulai Sync
-             </button>
+        {data.length === 0 ? (
+           <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed border-gray-100 rounded-xl">
+             <p className="text-xl font-medium text-gray-400">Menunggu data...</p>
+             <button onClick={refreshData} className="mt-4 text-blue-600 hover:underline">Refresh</button>
            </div>
         ) : (
            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {signages.map((item) => (
+              {data.map((item) => (
                 <div 
                   key={item.id} 
                   onClick={() => onSelect(item)}
-                  className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-xl hover:scale-[1.02] transition-all cursor-pointer group flex flex-col h-full"
+                  className="bg-gray-50 rounded-xl p-8 cursor-pointer hover:bg-gray-100 hover:shadow-lg transition-all group border border-gray-100"
                 >
-                  {/* Card Preview Header */}
-                  <div className="h-48 bg-gray-200 relative overflow-hidden">
-                    {item.backgroundImage ? (
-                      <img src={item.backgroundImage} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
-                    ) : (
-                      <div className="w-full h-full bg-blue-600" />
-                    )}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" />
-                    
-                    {/* Floating Open Button */}
-                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        <span className="bg-white/90 backdrop-blur text-blue-900 px-6 py-2 rounded-full font-bold shadow-lg flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-transform">
-                            <Eye size={20} /> Tampilkan
-                        </span>
-                    </div>
-                  </div>
-
-                  {/* Card Content */}
-                  <div className="p-6 flex-1 flex flex-col">
-                    <div className="mb-4">
-                      <p className="text-xs font-bold text-blue-600 tracking-wider mb-2 uppercase">{item.welcomeLabel}</p>
-                      <h3 className="font-bold text-gray-900 text-2xl leading-tight mb-2">{item.guestName}</h3>
-                      {item.subText && <p className="text-sm text-gray-500 line-clamp-2">{item.subText}</p>}
-                    </div>
-                    
-                    <div className="mt-auto pt-4 border-t border-gray-100 flex justify-between items-center text-gray-400 text-xs">
-                        <span>Dibuat: {new Date(item.createdAt).toLocaleDateString('id-ID')}</span>
-                    </div>
+                  <p className="text-xs font-bold text-gray-400 tracking-wider mb-4 uppercase">{item.welcomeLabel}</p>
+                  <h3 className="font-bold text-gray-900 text-3xl leading-tight mb-4">{item.guestName}</h3>
+                  {item.subText && <p className="text-lg text-gray-600">{item.subText}</p>}
+                  
+                  <div className="mt-8 flex items-center text-blue-600 font-bold text-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                    TAMPILKAN LAYAR PENUH &rarr;
                   </div>
                 </div>
               ))}
