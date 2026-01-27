@@ -21,31 +21,14 @@
         }
       }
       
-      // Error Handler: Menampilkan pesan error di layar jika terjadi crash
       window.onerror = function(msg, source, line, col, error) {
-        // Abaikan error resize observer loop yang sering terjadi tapi tidak berbahaya
         if(msg && typeof msg === 'string' && msg.includes('ResizeObserver')) return;
-        
-        var d = document.getElementById("global-error");
-        if(!d) {
-             d = document.createElement("div");
-             d.id = "global-error";
-             d.style.position = "fixed";
-             d.style.top = "0";
-             d.style.left = "0";
-             d.style.width = "100%";
-             d.style.padding = "20px";
-             d.style.backgroundColor = "#fee2e2";
-             d.style.color = "#b91c1c";
-             d.style.zIndex = "10000";
-             d.style.fontFamily = "monospace";
-             document.body.appendChild(d);
-        }
-        d.innerHTML = "<strong>System Error:</strong> " + msg;
+        console.error("Global Error:", msg, error);
       };
     </script>
     
     <!-- STRICT IMPORT MAP: Clean React 18.2.0 Only -->
+    <!-- MENGHAPUS BARIS REACT 19 YANG MENYEBABKAN CRASH -->
     <script type="importmap">
 {
   "imports": {
