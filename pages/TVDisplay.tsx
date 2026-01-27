@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { signageService, supabase } from '../services/supabase';
 import { Signage } from '../types';
 import { SignagePreview } from '../components/SignagePreview';
-import { Loader2, MonitorOff, Maximize2, Play, Grid, Smartphone, Monitor, RefreshCw, X, CheckCircle, Circle, ListVideo } from 'lucide-react';
+import { Loader2, MonitorOff, Maximize2, Play, Grid, Smartphone, Monitor, RefreshCw, X, CheckCircle, Circle, ListVideo, ArrowRight } from 'lucide-react';
 
 type ViewMode = 'gallery' | 'playback';
 type PlaybackType = 'loop' | 'single';
@@ -21,6 +21,10 @@ export const TVDisplay: React.FC = () => {
   // Selection State
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  // Remote Control Focus State
+  const [focusedIndex, setFocusedIndex] = useState(0);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -131,6 +135,81 @@ export const TVDisplay: React.FC = () => {
     }
   };
 
+  // 4. Remote Control Logic
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+        if (loading || signages.length === 0) return;
+
+        // Playback Controls
+        if (viewMode === 'playback') {
+            if (e.key === 'Escape' || e.key === 'Backspace') {
+                stopPlayback();
+            }
+            return;
+        }
+
+        // Gallery Controls
+        if (viewMode === 'gallery') {
+            // Calculate columns based on window width to navigate Up/Down correctly
+            const getColumns = () => {
+                const w = window.innerWidth;
+                if (w >= 1536) return 4; // 2xl
+                if (w >= 1024) return 3; // lg
+                if (w >= 768) return 2;  // md
+                return 1;
+            };
+
+            const cols = getColumns();
+
+            switch (e.key) {
+                case 'ArrowRight':
+                    setFocusedIndex(prev => Math.min(prev + 1, signages.length - 1));
+                    break;
+                case 'ArrowLeft':
+                    setFocusedIndex(prev => Math.max(prev - 1, 0));
+                    break;
+                case 'ArrowDown':
+                    setFocusedIndex(prev => Math.min(prev + cols, signages.length - 1));
+                    break;
+                case 'ArrowUp':
+                    setFocusedIndex(prev => Math.max(prev - cols, 0));
+                    break;
+                case 'Enter':
+                    const s = signages[focusedIndex];
+                    if (s) {
+                        if (isSelectionMode) toggleSelection(s.id);
+                        else playSingle(s);
+                    }
+                    break;
+                case 's': // Shortcut for selection mode
+                case 'S':
+                    toggleSelectionMode();
+                    break;
+                case 'p': // Shortcut for Play All
+                case 'P':
+                     if(!isSelectionMode) startAllLoop();
+                     else if (selectedIds.size > 0) startSelectedLoop();
+                     break;
+            }
+        }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [signages, viewMode, focusedIndex, isSelectionMode, selectedIds, loading]);
+
+  // Scroll focused item into view
+  useEffect(() => {
+      if (viewMode === 'gallery' && itemRefs.current[focusedIndex]) {
+          itemRefs.current[focusedIndex]?.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center',
+              inline: 'nearest'
+          });
+      }
+  }, [focusedIndex, viewMode]);
+
+
   if (loading) return <div className="h-screen w-screen bg-black text-white flex items-center justify-center"><Loader2 className="animate-spin" /></div>;
 
   // RENDER: PLAYBACK MODE
@@ -177,7 +256,10 @@ export const TVDisplay: React.FC = () => {
       <header className="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
         <div>
            <h1 className="text-4xl font-light tracking-widest uppercase">Werkudara TV</h1>
-           <p className="text-gray-400 mt-2">Select content to display</p>
+           <p className="text-gray-400 mt-2 flex items-center gap-2">
+               <span className="bg-gray-800 px-2 py-1 rounded text-xs border border-gray-700">REMOTE ENABLED</span>
+               Select content to display
+           </p>
         </div>
         
         <div className="flex gap-3">
@@ -218,17 +300,24 @@ export const TVDisplay: React.FC = () => {
           </div>
       ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
-              {signages.map((s) => {
+              {signages.map((s, index) => {
                   const isSelected = selectedIds.has(s.id);
+                  const isFocused = focusedIndex === index;
+                  
                   return (
                     <div 
-                        key={s.id} 
-                        onClick={() => isSelectionMode ? toggleSelection(s.id) : playSingle(s)}
+                        key={s.id}
+                        ref={(el) => itemRefs.current[index] = el}
+                        onClick={() => {
+                            setFocusedIndex(index); // Update focus on click
+                            isSelectionMode ? toggleSelection(s.id) : playSingle(s);
+                        }}
                         className={`
-                            group relative bg-gray-800 rounded-xl overflow-hidden cursor-pointer transition-all duration-300
+                            group relative bg-gray-800 rounded-xl overflow-hidden cursor-pointer transition-all duration-200
+                            ${isFocused ? 'scale-[1.05] z-10 shadow-2xl ring-4 ring-yellow-400 ring-offset-4 ring-offset-gray-900' : ''}
                             ${isSelectionMode 
                                 ? (isSelected ? 'ring-4 ring-green-500 ring-offset-2 ring-offset-gray-900 scale-[1.02]' : 'opacity-60 hover:opacity-100')
-                                : 'ring-0 hover:ring-4 ring-blue-500 hover:shadow-2xl hover:-translate-y-1'
+                                : (!isFocused && 'ring-0 hover:ring-2 ring-blue-500 hover:shadow-xl')
                             }
                         `}
                     >
@@ -255,8 +344,8 @@ export const TVDisplay: React.FC = () => {
 
                         {/* Play Overlay (Only when NOT in selection mode) */}
                         {!isSelectionMode && (
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
-                                <Play size={48} className="opacity-0 group-hover:opacity-100 transform scale-50 group-hover:scale-100 transition-all duration-300 drop-shadow-lg" fill="white" />
+                            <div className={`absolute inset-0 bg-black/0 transition-colors flex items-center justify-center ${isFocused ? 'bg-black/20' : 'group-hover:bg-black/40'}`}>
+                                <Play size={48} className={`transform transition-all duration-300 drop-shadow-lg ${isFocused ? 'opacity-100 scale-100' : 'opacity-0 scale-50 group-hover:opacity-100 group-hover:scale-100'}`} fill="white" />
                             </div>
                         )}
 
