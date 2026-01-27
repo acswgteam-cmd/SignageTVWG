@@ -54,7 +54,7 @@ export const SignageView: React.FC<SignageViewProps> = ({ data, onBack }) => {
       
       {/* Jika ada background image, beri overlay putih tipis supaya teks terbaca */}
       {data.backgroundImage && (
-        <div className="absolute inset-0 bg-white/80 z-0"></div>
+        <div className="absolute inset-0 bg-white/85 z-0"></div>
       )}
 
       {/* CONTROLS (Muncul saat mouse digerakkan) */}
@@ -69,25 +69,25 @@ export const SignageView: React.FC<SignageViewProps> = ({ data, onBack }) => {
         </button>
       </div>
 
-      {/* CONTENT UTAMA - Layar Putih Minimalis */}
-      <div className="relative z-10 max-w-[90vw] w-full flex flex-col items-center justify-center text-center animate-fade-in px-4">
+      {/* CONTENT UTAMA - Design Professional */}
+      <div className="relative z-10 max-w-[95vw] w-full flex flex-col items-center justify-center text-center animate-fade-in px-4">
         
-        {/* Welcome Text (Bisa diedit Admin) */}
-        <h2 className="text-2xl md:text-3xl lg:text-4xl font-light tracking-[0.3em] uppercase text-gray-500 mb-8 md:mb-12">
-          {data.welcomeLabel || "WELCOME"}
+        {/* Welcome Text (Static/Editable) */}
+        <h2 className="text-xl md:text-2xl lg:text-3xl font-medium tracking-[0.4em] uppercase text-gray-500 mb-10 md:mb-16">
+          {data.welcomeLabel || "SELAMAT DATANG"}
         </h2>
 
-        {/* Separator Line */}
-        <div className="w-24 md:w-32 h-[2px] bg-gray-300 mb-8 md:mb-12"></div>
+        {/* Separator Elegant */}
+        <div className="w-[2px] h-16 md:h-24 bg-gradient-to-b from-gray-200 via-gray-400 to-gray-200 mb-10 md:mb-16"></div>
 
-        {/* Nama Tamu (Bisa diedit Admin) */}
-        <h1 className="text-5xl md:text-7xl lg:text-9xl font-bold leading-tight text-gray-900 mb-6 md:mb-10 tracking-tight drop-shadow-sm">
+        {/* Nama Tamu (Fokus Utama) */}
+        <h1 className="text-4xl md:text-6xl lg:text-8xl font-bold leading-[1.1] text-gray-900 mb-8 md:mb-12 tracking-tight drop-shadow-sm max-w-6xl">
           {data.guestName}
         </h1>
 
-        {/* Nama Instansi (Bisa diedit Admin) */}
+        {/* Nama Instansi (Subtext) */}
         {data.subText && (
-            <h3 className="text-xl md:text-3xl lg:text-4xl text-gray-600 font-medium mt-2 md:mt-4 max-w-4xl mx-auto">
+            <h3 className="text-lg md:text-2xl lg:text-4xl text-gray-600 font-normal mt-2 md:mt-4 max-w-4xl mx-auto border-t border-gray-300 pt-8 md:pt-12 px-12">
                 {data.subText}
             </h3>
         )}
@@ -95,11 +95,11 @@ export const SignageView: React.FC<SignageViewProps> = ({ data, onBack }) => {
       
       <style>{`
         @keyframes fade-in {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
         }
         .animate-fade-in {
-            animation: fade-in 1s ease-out forwards;
+            animation: fade-in 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
         }
       `}</style>
     </div>
