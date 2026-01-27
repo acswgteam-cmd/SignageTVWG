@@ -5,7 +5,14 @@ export interface Signage {
   guest_name: string;
   sub_text: string;
   background_image: string | null;
-  is_active?: boolean; // New field for TV playlist
+  is_active?: boolean;
+  layout?: 'landscape' | 'portrait'; // New field
+}
+
+export interface SavedBackground {
+  id: string;
+  created_at: string;
+  image_data: string;
 }
 
 export type SignageInsert = Omit<Signage, 'id' | 'created_at'>;
