@@ -1,14 +1,30 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Signage, SignageInsert } from '../types';
 
-// Try to get credentials from LocalStorage first, then environment variables
-const getStoredUrl = () => localStorage.getItem('sb_url') || process.env.SUPABASE_URL || '';
-const getStoredKey = () => localStorage.getItem('sb_key') || process.env.SUPABASE_ANON_KEY || '';
+// Hardcoded Credentials (Embedded as requested)
+const DEFAULT_URL = 'https://veigctbjnyvsbxpmamas.supabase.co';
+const DEFAULT_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZlaWdjdGJqbnl2c2J4cG1hbWFzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0ODgxNTksImV4cCI6MjA4NTA2NDE1OX0.6wZaq_rlIVFcWj2Yet92Oe0X8SBfkQb2YzhVI9n7R-E';
 
-const supabaseUrl = getStoredUrl();
-const supabaseKey = getStoredKey();
+// Helper to get effective credentials
+// Priority: LocalStorage (User Override) > Environment Vars (Vercel) > Hardcoded Defaults
+export const getActiveUrl = () => {
+  return localStorage.getItem('sb_url') || 
+         process.env.NEXT_PUBLIC_SUPABASE_URL || 
+         process.env.SUPABASE_URL || 
+         DEFAULT_URL;
+};
 
-// Initialize Supabase client if credentials exist
+export const getActiveKey = () => {
+  return localStorage.getItem('sb_key') || 
+         process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 
+         process.env.SUPABASE_ANON_KEY || 
+         DEFAULT_KEY;
+};
+
+const supabaseUrl = getActiveUrl();
+const supabaseKey = getActiveKey();
+
+// Initialize Supabase client
 export const supabase: SupabaseClient | null = (supabaseUrl && supabaseKey && supabaseUrl.startsWith('http'))
   ? createClient(supabaseUrl, supabaseKey)
   : null;
