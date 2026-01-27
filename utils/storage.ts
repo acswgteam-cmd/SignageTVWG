@@ -30,7 +30,11 @@ const config = getSupabaseConfig();
 if (config && config.url && config.key) {
   try {
     // Basic validation to prevent crash on empty strings
-    supabase = createClient(config.url, config.key);
+    if (config.url.startsWith('http')) {
+        supabase = createClient(config.url, config.key);
+    } else {
+        console.warn("Invalid Supabase URL");
+    }
   } catch (e) {
     console.error("Failed to init Supabase", e);
     // Fallback to null so app continues in offline mode
@@ -45,10 +49,19 @@ export const getSignages = async (): Promise<SignageData[]> => {
   // 1. Try Supabase if configured
   if (supabase) {
     try {
-      const { data, error } = await supabase
+      // Timeout promise to prevent hanging forever
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Timeout')), 5000)
+      );
+      
+      const fetchPromise = supabase
         .from('signages')
         .select('*')
         .order('created_at', { ascending: false });
+
+      // Race between fetch and 5s timeout
+      const result: any = await Promise.race([fetchPromise, timeoutPromise]);
+      const { data, error } = result || {};
       
       if (!error && data) {
         useCloud = true;
@@ -63,7 +76,7 @@ export const getSignages = async (): Promise<SignageData[]> => {
         }));
       }
     } catch (err) {
-      console.warn("Supabase connection failed, falling back to local", err);
+      console.warn("Supabase connection failed/timeout, falling back to local", err);
     }
   }
 
@@ -78,8 +91,8 @@ export const getSignages = async (): Promise<SignageData[]> => {
         id: 'sample_1',
         createdAt: Date.now(),
         welcomeLabel: 'SELAMAT DATANG',
-        guestName: 'Bapak Presiden',
-        subText: 'Kunjungan Kerja 2024'
+        guestName: 'Tamu Spesial',
+        subText: 'Silakan masuk ke Admin Panel'
     }];
   }
   return JSON.parse(stored);
