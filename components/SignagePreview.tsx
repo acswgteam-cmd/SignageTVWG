@@ -9,6 +9,7 @@ interface SignagePreviewProps {
 
 export const SignagePreview: React.FC<SignagePreviewProps> = ({ data, className = '', fullScreen = false }) => {
   const bgImage = data.background_image || '';
+  const isPortrait = data.layout === 'portrait';
   
   // Base style for the Werkudara theme
   const containerStyle: React.CSSProperties = {
@@ -23,26 +24,26 @@ export const SignagePreview: React.FC<SignagePreviewProps> = ({ data, className 
       style={containerStyle}
     >
       {/* Overlay for better text readability if image is used */}
-      {/* Reduced opacity slightly since user will use designed backgrounds */}
       {bgImage && <div className="absolute inset-0 bg-black/10" />}
 
       {/* Content Container */}
-      <div className="relative z-10 w-full max-w-7xl mx-auto px-8 flex flex-col items-center justify-center h-full">
+      {/* If Portrait, we add more vertical padding and ensure width is constrained properly */}
+      <div className={`relative z-10 w-full max-w-7xl mx-auto flex flex-col items-center justify-center h-full ${isPortrait ? 'px-6 py-20' : 'px-8'}`}>
         
         {/* Main Text Content */}
-        <div className="text-center space-y-4 md:space-y-8 flex-grow flex flex-col justify-center">
-          <h2 className="text-2xl md:text-5xl font-light tracking-[0.3em] uppercase opacity-90 drop-shadow-lg">
+        <div className="text-center flex-grow flex flex-col justify-center">
+          <h2 className={`font-light tracking-[0.3em] uppercase opacity-90 drop-shadow-lg ${isPortrait ? 'text-4xl mb-8' : 'text-2xl md:text-5xl mb-4 md:mb-8'}`}>
             {data.welcome_label || 'WELCOME'}
           </h2>
           
-          <div className="w-24 h-1 bg-white/50 mx-auto my-4 md:my-8 rounded-full shadow-sm"></div>
+          <div className={`bg-white/50 mx-auto rounded-full shadow-sm ${isPortrait ? 'w-32 h-2 my-8' : 'w-24 h-1 my-4 md:my-8'}`}></div>
           
-          <h1 className="text-4xl md:text-7xl lg:text-8xl font-bold tracking-wide drop-shadow-2xl">
+          <h1 className={`font-bold tracking-wide drop-shadow-2xl leading-tight ${isPortrait ? 'text-6xl md:text-8xl py-4' : 'text-4xl md:text-7xl lg:text-8xl'}`}>
             {data.guest_name || 'Guest Name'}
           </h1>
           
           {data.sub_text && (
-             <h3 className="text-xl md:text-3xl font-medium mt-4 opacity-90 max-w-4xl mx-auto leading-relaxed drop-shadow-lg">
+             <h3 className={`font-medium opacity-90 max-w-4xl mx-auto leading-relaxed drop-shadow-lg ${isPortrait ? 'text-3xl mt-12 px-4' : 'text-xl md:text-3xl mt-4'}`}>
                {data.sub_text}
              </h3>
           )}
