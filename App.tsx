@@ -9,25 +9,20 @@ export default function App() {
   const [view, setView] = useState<'dashboard' | 'viewer' | 'public'>('dashboard');
   const [selectedSignage, setSelectedSignage] = useState<SignageData | null>(null);
   const [signageList, setSignageList] = useState<SignageData[]>([]);
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
-  // Function to load data properly
+  // Load Data function
   const refreshData = async () => {
-    try {
-      const data = await getSignages();
-      setSignageList(data || []);
-    } catch (e) {
-      console.error("Failed to load data", e);
-      setSignageList([]);
-    } finally {
-      setIsLoaded(true);
-    }
+    // Fetch data (will grab local storage instantly if cloud is slow)
+    const data = await getSignages();
+    setSignageList(data || []);
+    setIsReady(true);
   };
 
   useEffect(() => {
     refreshData();
     
-    // Check URL params for "public" mode (untuk Smart TV)
+    // Check URL Mode
     const params = new URLSearchParams(window.location.search);
     if (params.get('mode') === 'public') {
       setView('public');
@@ -49,7 +44,6 @@ export default function App() {
     setSelectedSignage(null);
   };
   
-  // Navigation Handlers
   const switchToPublic = () => {
     const url = new URL(window.location.href);
     url.searchParams.set('mode', 'public');
@@ -64,17 +58,16 @@ export default function App() {
     setView('dashboard');
   };
 
-  if (!isLoaded) {
+  // Safe loading state
+  if (!isReady) {
       return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-500 font-sans">
-            <div className="text-center">
-                <p className="mb-2">Menghubungkan Database...</p>
-                <div className="w-8 h-8 border-4 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
-            </div>
+        <div className="flex items-center justify-center h-screen bg-gray-50">
+            <div className="text-gray-400 font-medium animate-pulse">Memuat Data...</div>
         </div>
       );
   }
 
+  // RENDER LOGIC
   if (view === 'viewer' && selectedSignage) {
     return (
       <SignageView 
