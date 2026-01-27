@@ -29,20 +29,18 @@
         
         // Tampilkan error di layar jika terjadi crash fatal
         const root = document.getElementById('root');
+        if(root && msg.toLowerCase().includes('script error')) return; // Ignore generic script errors
+        
         if(root) {
-            root.innerHTML = `
-                <div style="padding: 20px; color: red; font-family: sans-serif;">
-                    <h1>Application Crash</h1>
-                    <p>${msg}</p>
-                    <small>Check console for details.</small>
-                </div>
-            `;
+             console.error("Global Error Detected:", msg);
+             // Kita biarkan loading screen tetap ada jika error minor, 
+             // tapi jika fatal, React biasanya akan menghandle via ErrorBoundary di index.tsx
         }
       };
     </script>
     
-    <!-- STRICT IMPORT MAP: HANYA REACT 18.2.0 -->
-    <!-- SAYA SUDAH MENGHAPUS BARIS 'react-dom/' YANG BERISI VERSI 19 -->
+    <!-- STRICT IMPORT MAP: Clean React 18.2.0 Only -->
+    <!-- Removed the conflicting React 19 line -->
     <script type="importmap">
 {
   "imports": {
@@ -61,7 +59,7 @@
     <!-- Default Content sebelum React Loading -->
     <div id="root" class="w-full h-screen flex items-center justify-center bg-white text-gray-300">
         <div class="text-center animate-pulse">
-            <h2 class="text-xl font-light tracking-widest">LOADING SIGNAGE...</h2>
+            <h2 class="text-xl font-light tracking-widest">LOADING APP...</h2>
         </div>
     </div>
   </body>
