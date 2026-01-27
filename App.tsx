@@ -65,7 +65,14 @@ export default function App() {
   };
 
   if (!isLoaded) {
-      return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-400">Loading...</div>;
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-500 font-sans">
+            <div className="text-center">
+                <p className="mb-2">Menghubungkan Database...</p>
+                <div className="w-8 h-8 border-4 border-gray-300 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+            </div>
+        </div>
+      );
   }
 
   if (view === 'viewer' && selectedSignage) {
