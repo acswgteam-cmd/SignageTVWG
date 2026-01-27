@@ -17,18 +17,32 @@
             fontFamily: {
               sans: ['Montserrat', 'sans-serif'],
             },
+            animation: {
+              'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+            }
           }
         }
       }
       
       window.onerror = function(msg, source, line, col, error) {
         if(msg && typeof msg === 'string' && msg.includes('ResizeObserver')) return;
-        console.error("Global Error:", msg, error);
+        
+        // Tampilkan error di layar jika terjadi crash fatal
+        const root = document.getElementById('root');
+        if(root) {
+            root.innerHTML = `
+                <div style="padding: 20px; color: red; font-family: sans-serif;">
+                    <h1>Application Crash</h1>
+                    <p>${msg}</p>
+                    <small>Check console for details.</small>
+                </div>
+            `;
+        }
       };
     </script>
     
-    <!-- STRICT IMPORT MAP: Clean React 18.2.0 Only -->
-    <!-- MENGHAPUS BARIS REACT 19 YANG MENYEBABKAN CRASH -->
+    <!-- STRICT IMPORT MAP: HANYA REACT 18.2.0 -->
+    <!-- SAYA SUDAH MENGHAPUS BARIS 'react-dom/' YANG BERISI VERSI 19 -->
     <script type="importmap">
 {
   "imports": {
@@ -44,6 +58,11 @@
 </script>
   </head>
   <body>
-    <div id="root"></div>
+    <!-- Default Content sebelum React Loading -->
+    <div id="root" class="w-full h-screen flex items-center justify-center bg-white text-gray-300">
+        <div class="text-center animate-pulse">
+            <h2 class="text-xl font-light tracking-widest">LOADING SIGNAGE...</h2>
+        </div>
+    </div>
   </body>
 </html>
