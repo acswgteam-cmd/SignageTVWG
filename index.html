@@ -27,20 +27,18 @@
       window.onerror = function(msg, source, line, col, error) {
         if(msg && typeof msg === 'string' && msg.includes('ResizeObserver')) return;
         
-        // Tampilkan error di layar jika terjadi crash fatal
         const root = document.getElementById('root');
-        if(root && msg.toLowerCase().includes('script error')) return; // Ignore generic script errors
-        
-        if(root) {
-             console.error("Global Error Detected:", msg);
-             // Kita biarkan loading screen tetap ada jika error minor, 
-             // tapi jika fatal, React biasanya akan menghandle via ErrorBoundary di index.tsx
+        // Only show fatal errors if root is still in loading state
+        if(root && root.innerHTML.includes('LOADING APP')) {
+             console.error("Boot Error:", msg);
+             // Optional: Show error on screen if needed for debugging
+             // root.innerHTML = '<div style="color:red;padding:20px">Error: ' + msg + '</div>';
         }
       };
     </script>
     
     <!-- STRICT IMPORT MAP: Clean React 18.2.0 Only -->
-    <!-- Removed the conflicting React 19 line -->
+    <!-- MENGHAPUS BARIS REACT 19 YANG MENYEBABKAN CRASH -->
     <script type="importmap">
 {
   "imports": {
