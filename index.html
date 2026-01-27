@@ -21,26 +21,31 @@
         }
       }
       
-      // Error Handler untuk Debugging di Layar
+      // Error Handler: Menampilkan pesan error di layar jika terjadi crash
       window.onerror = function(msg, source, line, col, error) {
-        // Abaikan error resize observer yang tidak berbahaya
-        if(msg && msg.includes && msg.includes('ResizeObserver')) return;
+        // Abaikan error resize observer loop yang sering terjadi tapi tidak berbahaya
+        if(msg && typeof msg === 'string' && msg.includes('ResizeObserver')) return;
         
-        var d = document.createElement("div");
-        d.style.position = "fixed";
-        d.style.top = "0";
-        d.style.left = "0";
-        d.style.width = "100%";
-        d.style.padding = "20px";
-        d.style.backgroundColor = "#fee2e2";
-        d.style.color = "#b91c1c";
-        d.style.zIndex = "10000";
-        d.innerHTML = "<strong>Error:</strong> " + msg;
-        document.body.appendChild(d);
+        var d = document.getElementById("global-error");
+        if(!d) {
+             d = document.createElement("div");
+             d.id = "global-error";
+             d.style.position = "fixed";
+             d.style.top = "0";
+             d.style.left = "0";
+             d.style.width = "100%";
+             d.style.padding = "20px";
+             d.style.backgroundColor = "#fee2e2";
+             d.style.color = "#b91c1c";
+             d.style.zIndex = "10000";
+             d.style.fontFamily = "monospace";
+             document.body.appendChild(d);
+        }
+        d.innerHTML = "<strong>System Error:</strong> " + msg;
       };
     </script>
     
-    <!-- STRICT IMPORT MAP: HANYA REACT 18.2.0 -->
+    <!-- STRICT IMPORT MAP: Clean React 18.2.0 Only -->
     <script type="importmap">
 {
   "imports": {
