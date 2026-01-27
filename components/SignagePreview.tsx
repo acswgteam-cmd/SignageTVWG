@@ -16,38 +16,42 @@ export const SignagePreview: React.FC<SignagePreviewProps> = ({ data, className 
     backgroundImage: bgImage ? `url(${bgImage})` : 'linear-gradient(135deg, #0044cc 0%, #001133 100%)',
     backgroundSize: 'cover',
     backgroundPosition: 'center',
+    containerType: 'inline-size', // Enable Container Queries
   };
 
   const name = data.guest_name || 'Guest Name';
   const sub = data.sub_text || '';
 
-  // Dynamic Font Sizing Logic
-  // We check string length to assign appropriate classes to prevent overflow
+  // Dynamic Font Sizing Logic using CQW (Container Query Width)
+  // This ensures text scales relative to the box size, not the screen size.
+  // Perfect for thumbnail previews.
   const getNameSize = (text: string, isPortrait: boolean) => {
     const len = text.length;
     if (isPortrait) {
-        if (len > 80) return 'text-2xl leading-tight';
-        if (len > 50) return 'text-3xl leading-snug';
-        if (len > 30) return 'text-4xl leading-tight';
-        if (len > 15) return 'text-5xl leading-tight';
-        return 'text-6xl md:text-8xl';
+        // Vertical Layout (Base width relative is narrower, so percentages are higher)
+        if (len > 80) return 'text-[4cqw] leading-tight';
+        if (len > 50) return 'text-[5cqw] leading-snug';
+        if (len > 30) return 'text-[7cqw] leading-tight';
+        if (len > 15) return 'text-[9cqw] leading-tight';
+        return 'text-[11cqw]';
     } else {
-        if (len > 100) return 'text-3xl leading-tight';
-        if (len > 60) return 'text-3xl md:text-5xl leading-tight';
-        if (len > 30) return 'text-4xl md:text-6xl leading-tight';
-        if (len > 15) return 'text-4xl md:text-7xl';
-        return 'text-4xl md:text-7xl lg:text-8xl';
+        // Landscape Layout
+        if (len > 100) return 'text-[2.5cqw] leading-tight';
+        if (len > 60) return 'text-[3.5cqw] leading-tight';
+        if (len > 30) return 'text-[4.5cqw] leading-tight';
+        if (len > 15) return 'text-[6cqw]';
+        return 'text-[7cqw]';
     }
   };
 
   const getSubSize = (text: string, isPortrait: boolean) => {
     const len = text.length;
     if (isPortrait) {
-         if (len > 80) return 'text-sm px-4';
-         return 'text-xl md:text-3xl px-4';
+         if (len > 80) return 'text-[2cqw] px-4';
+         return 'text-[3.5cqw] px-4';
     } else {
-         if (len > 100) return 'text-lg';
-         return 'text-xl md:text-3xl';
+         if (len > 100) return 'text-[1.5cqw]';
+         return 'text-[2.5cqw]';
     }
   };
 
@@ -63,26 +67,26 @@ export const SignagePreview: React.FC<SignagePreviewProps> = ({ data, className 
       {bgImage && <div className="absolute inset-0 bg-black/10" />}
 
       {/* Content Container */}
-      <div className={`relative z-10 w-full max-w-7xl mx-auto flex flex-col items-center justify-center h-full ${isPortrait ? 'px-6 py-12' : 'px-8 py-8'}`}>
+      <div className={`relative z-10 w-full max-w-[95cqw] mx-auto flex flex-col items-center justify-center h-full ${isPortrait ? 'py-12' : 'py-8'}`}>
         
         {/* Main Text Content */}
         <div className="text-center flex-grow flex flex-col justify-center w-full max-h-full">
           {/* Welcome Label */}
-          <h2 className={`font-light tracking-[0.3em] uppercase opacity-90 drop-shadow-lg shrink-0 ${isPortrait ? 'text-2xl mb-6' : 'text-2xl md:text-5xl mb-4 md:mb-8'}`}>
+          <h2 className={`font-light tracking-[0.3em] uppercase opacity-90 drop-shadow-lg shrink-0 ${isPortrait ? 'text-[2.5cqw] mb-[4cqw]' : 'text-[1.8cqw] mb-[2cqw]'}`}>
             {data.welcome_label || 'WELCOME'}
           </h2>
           
           {/* Separator Line */}
-          <div className={`bg-white/50 mx-auto rounded-full shadow-sm shrink-0 ${isPortrait ? 'w-24 h-1.5 mb-6' : 'w-24 h-1 mb-4 md:mb-8'}`}></div>
+          <div className={`bg-white/50 mx-auto rounded-full shadow-sm shrink-0 ${isPortrait ? 'w-[15cqw] h-[0.4cqw] mb-[4cqw]' : 'w-[8cqw] h-[0.3cqw] mb-[3cqw]'}`}></div>
           
           {/* Guest Name - Dynamic Sizing */}
-          <h1 className={`font-bold tracking-wide drop-shadow-2xl text-center break-words max-w-full ${nameSizeClass}`}>
+          <h1 className={`font-bold tracking-wide drop-shadow-2xl text-center break-words max-w-[90cqw] mx-auto ${nameSizeClass}`}>
             {name}
           </h1>
           
           {/* Sub Text - Dynamic Sizing */}
           {sub && (
-             <h3 className={`font-medium opacity-90 max-w-5xl mx-auto leading-relaxed drop-shadow-lg mt-4 ${subSizeClass}`}>
+             <h3 className={`font-medium opacity-90 max-w-[80cqw] mx-auto leading-relaxed drop-shadow-lg mt-[1.5cqw] ${subSizeClass}`}>
                {sub}
              </h3>
           )}
