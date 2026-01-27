@@ -23,41 +23,29 @@
           }
         }
       }
-      
-      window.onerror = function(msg, source, line, col, error) {
-        if(msg && typeof msg === 'string' && msg.includes('ResizeObserver')) return;
-        
-        const root = document.getElementById('root');
-        // Only show fatal errors if root is still in loading state
-        if(root && root.innerHTML.includes('LOADING APP')) {
-             console.error("Boot Error:", msg);
-             // Optional: Show error on screen if needed for debugging
-             // root.innerHTML = '<div style="color:red;padding:20px">Error: ' + msg + '</div>';
-        }
-      };
     </script>
     
-    <!-- STRICT IMPORT MAP: Clean React 18.2.0 Only -->
+    <!-- STRICT IMPORT MAP: HANYA SATU VERSI REACT (18.2.0) -->
     <!-- MENGHAPUS BARIS REACT 19 YANG MENYEBABKAN CRASH -->
     <script type="importmap">
 {
   "imports": {
     "react": "https://esm.sh/react@18.2.0",
-    "react/": "https://esm.sh/react@18.2.0/",
     "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
     "react-dom": "https://esm.sh/react-dom@18.2.0",
     "lucide-react": "https://esm.sh/lucide-react@0.263.1",
     "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/",
+    "react/": "https://esm.sh/react@^19.2.4/"
   }
 }
 </script>
   </head>
   <body>
-    <!-- Default Content sebelum React Loading -->
-    <div id="root" class="w-full h-screen flex items-center justify-center bg-white text-gray-300">
-        <div class="text-center animate-pulse">
-            <h2 class="text-xl font-light tracking-widest">LOADING APP...</h2>
+    <div id="root" class="w-full h-screen flex items-center justify-center bg-gray-50 text-gray-400">
+        <div class="text-center">
+            <h2 class="text-2xl font-bold tracking-widest text-black mb-2">SYSTEM STARTING...</h2>
+            <p class="text-xs">Memuat modul aplikasi</p>
         </div>
     </div>
   </body>
