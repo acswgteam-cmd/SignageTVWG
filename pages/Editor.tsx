@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { signageService, backgroundService, saveSupabaseConfig, isSupabaseConfigured, getActiveUrl, getActiveKey } from '../services/supabase';
 import { Signage, SignageInsert, SavedBackground } from '../types';
 import { SignagePreview } from '../components/SignagePreview';
-import { Monitor, Save, Trash2, Plus, Image as ImageIcon, Loader2, Settings, Database, AlertCircle, ArrowRight, Upload, PlayCircle, StopCircle, Smartphone, Monitor as MonitorIcon } from 'lucide-react';
+import { Monitor, Save, Trash2, Plus, Image as ImageIcon, Loader2, Settings, Database, AlertCircle, ArrowRight, Upload, PlayCircle, StopCircle, Smartphone, Monitor as MonitorIcon, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 export const Editor: React.FC = () => {
@@ -185,6 +185,17 @@ export const Editor: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
+  const handleDeleteBackground = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm('Are you sure you want to delete this saved background?')) return;
+    try {
+        await backgroundService.deleteBackground(id);
+        await fetchBackgrounds();
+    } catch (e) {
+        console.error("Failed to delete background", e);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-gray-200 p-4 md:p-8 gap-6 overflow-hidden font-sans relative">
       
@@ -319,6 +330,15 @@ export const Editor: React.FC = () => {
                             className="w-full px-4 py-3 bg-white border border-gray-200 rounded-xl text-gray-900 focus:ring-2 focus:ring-blue-500 outline-none text-sm placeholder-gray-400"
                             placeholder="Select below or Upload..."
                         />
+                        {formData.background_image && (
+                            <button 
+                                onClick={() => setFormData({...formData, background_image: ''})}
+                                className="flex-shrink-0 w-12 flex items-center justify-center bg-red-100 hover:bg-red-200 text-red-600 rounded-xl"
+                                title="Clear Background"
+                            >
+                                <X size={20} />
+                            </button>
+                        )}
                         <button onClick={() => fileInputRef.current?.click()} disabled={isProcessingImg} className="flex-shrink-0 w-12 flex items-center justify-center bg-blue-100 hover:bg-blue-200 text-blue-700 rounded-xl disabled:opacity-50">
                             {isProcessingImg ? <Loader2 className="animate-spin" size={20} /> : <Upload size={20} />}
                         </button>
@@ -330,13 +350,21 @@ export const Editor: React.FC = () => {
                             <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Saved Backgrounds</p>
                             <div className="grid grid-cols-4 gap-2">
                                 {savedBackgrounds.map(bg => (
-                                    <button
-                                        key={bg.id}
-                                        onClick={() => setFormData(p => ({...p, background_image: bg.image_data}))}
-                                        className="aspect-video relative rounded-lg overflow-hidden border border-gray-200 hover:border-blue-500 hover:ring-2 ring-blue-200 transition-all group"
-                                    >
-                                        <img src={bg.image_data} className="w-full h-full object-cover" alt="bg" />
-                                    </button>
+                                    <div key={bg.id} className="relative group">
+                                        <button
+                                            onClick={() => setFormData(p => ({...p, background_image: bg.image_data}))}
+                                            className="w-full aspect-video rounded-lg overflow-hidden border border-gray-200 hover:border-blue-500 hover:ring-2 ring-blue-200 transition-all"
+                                        >
+                                            <img src={bg.image_data} className="w-full h-full object-cover" alt="bg" />
+                                        </button>
+                                        <button 
+                                            onClick={(e) => handleDeleteBackground(bg.id, e)}
+                                            className="absolute -top-1 -right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:scale-110"
+                                            title="Delete background"
+                                        >
+                                            <X size={10} />
+                                        </button>
+                                    </div>
                                 ))}
                             </div>
                         </div>
