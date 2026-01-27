@@ -9,6 +9,7 @@ export default function App() {
   const [view, setView] = useState<'dashboard' | 'viewer' | 'public'>('dashboard');
   const [selectedSignage, setSelectedSignage] = useState<SignageData | null>(null);
   const [signageList, setSignageList] = useState<SignageData[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
 
   // Function to load data properly
   const refreshData = async () => {
@@ -18,6 +19,8 @@ export default function App() {
     } catch (e) {
       console.error("Failed to load data", e);
       setSignageList([]);
+    } finally {
+      setIsLoaded(true);
     }
   };
 
@@ -60,6 +63,10 @@ export default function App() {
     window.history.pushState({}, '', url);
     setView('dashboard');
   };
+
+  if (!isLoaded) {
+      return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-400">Loading...</div>;
+  }
 
   if (view === 'viewer' && selectedSignage) {
     return (
