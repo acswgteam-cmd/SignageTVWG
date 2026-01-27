@@ -4,141 +4,126 @@ import { createClient } from '@supabase/supabase-js';
 const STORAGE_KEY = 'signage_list_v2';
 const SUPABASE_CONFIG_KEY = 'signage_supabase_config';
 
-interface SupabaseConfig {
-  url: string;
-  key: string;
-}
-
-export const getSupabaseConfig = (): SupabaseConfig | null => {
+// --- CONFIGURATION ---
+export const getSupabaseConfig = () => {
   try {
     const stored = localStorage.getItem(SUPABASE_CONFIG_KEY);
     return stored ? JSON.parse(stored) : null;
-  } catch (e) {
-    return null;
-  }
+  } catch { return null; }
 };
 
-export const saveSupabaseConfig = (config: SupabaseConfig) => {
+export const saveSupabaseConfig = (config: {url: string, key: string}) => {
   localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify(config));
-  window.location.reload(); // Reload to initialize client
+  window.location.reload();
 };
 
-// Initialize Client if config exists
+// --- INITIALIZATION ---
 let supabase: any = null;
 const config = getSupabaseConfig();
 
-if (config && config.url && config.key) {
-  try {
-    // Basic validation to prevent crash on empty strings
-    if (config.url.startsWith('http')) {
-        supabase = createClient(config.url, config.key);
-    } else {
-        console.warn("Invalid Supabase URL");
+if (config?.url && config?.key) {
+    try {
+        // Validasi URL sederhana agar tidak crash
+        if(config.url.startsWith('http')) {
+            supabase = createClient(config.url, config.key);
+        }
+    } catch (e) {
+        console.error("Supabase init error:", e);
     }
-  } catch (e) {
-    console.error("Failed to init Supabase", e);
-    // Fallback to null so app continues in offline mode
-    supabase = null;
-  }
 }
 
-export const getSignages = async (): Promise<SignageData[]> => {
-  let dataFromCloud: SignageData[] = [];
-  let useCloud = false;
+// --- DATA METHODS ---
 
-  // 1. Try Supabase if configured
+export const getSignages = async (): Promise<SignageData[]> => {
+  // 1. Cek Local Storage dulu (Prioritas Kecepatan & Offline)
+  const localData = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  
+  // Jika ada supabase, coba fetch di background (async)
+  // Jangan await di sini jika ingin UI instant, tapi untuk konsistensi data
+  // kita gunakan timeout pendek.
+  
+  let cloudData: SignageData[] = [];
+  
   if (supabase) {
     try {
-      // Timeout promise to prevent hanging forever
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error('Timeout')), 5000)
-      );
-      
-      const fetchPromise = supabase
-        .from('signages')
-        .select('*')
-        .order('created_at', { ascending: false });
+        // Timeout 2 detik saja, jangan biarkan user menunggu lama
+        const fetchPromise = supabase.from('signages').select('*').order('created_at', { ascending: false });
+        const timeoutPromise = new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 2000));
+        
+        const result: any = await Promise.race([fetchPromise, timeoutPromise]);
+        const { data, error } = result || {};
 
-      // Race between fetch and 5s timeout
-      const result: any = await Promise.race([fetchPromise, timeoutPromise]);
-      const { data, error } = result || {};
-      
-      if (!error && data) {
-        useCloud = true;
-        dataFromCloud = data.map((item: any) => ({
-          id: item.id,
-          createdAt: new Date(item.created_at).getTime(),
-          welcomeLabel: item.welcome_label,
-          guest_name: item.guest_name, // Handle typo in DB column gracefully
-          guestName: item.guest_name || item.guestName, 
-          subText: item.sub_text,
-          backgroundImage: item.background_image
-        }));
-      }
+        if (!error && data) {
+            cloudData = data.map((item: any) => ({
+                id: item.id,
+                createdAt: new Date(item.created_at).getTime(),
+                welcomeLabel: item.welcome_label || 'WELCOME',
+                guestName: item.guest_name || item.guestName || 'Tamu',
+                subText: item.sub_text || '',
+                backgroundImage: item.background_image
+            }));
+            
+            // Update local storage dengan data terbaru dari cloud (Cache)
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(cloudData));
+            return cloudData;
+        }
     } catch (err) {
-      console.warn("Supabase connection failed/timeout, falling back to local", err);
+        console.warn("Mode Offline/Lambat: Menggunakan data lokal.", err);
     }
   }
 
-  // If cloud worked, return cloud data
-  if (useCloud) return dataFromCloud;
+  // Jika hasil cloud kosong atau error, gunakan lokal
+  if (localData.length > 0) return localData;
 
-  // 2. Fallback to LocalStorage (Offline Mode)
-  const stored = localStorage.getItem(STORAGE_KEY);
-  if (!stored) {
-    // Return sample data for first time user so screen isn't empty
-    return [{
-        id: 'sample_1',
-        createdAt: Date.now(),
-        welcomeLabel: 'SELAMAT DATANG',
-        guestName: 'Tamu Spesial',
-        subText: 'Silakan masuk ke Admin Panel'
-    }];
-  }
-  return JSON.parse(stored);
+  // Jika cloud sukses tapi kosong, kembalikan kosong
+  if (cloudData.length > 0) return cloudData;
+
+  // Default jika tidak ada data sama sekali
+  return [{
+      id: 'default',
+      createdAt: Date.now(),
+      welcomeLabel: 'SELAMAT DATANG',
+      guestName: 'Nama Tamu',
+      subText: 'Nama Instansi'
+  }];
 };
 
 export const saveSignage = async (data: Omit<SignageData, 'id' | 'createdAt'>): Promise<void> => {
-  const newItem = {
-    ...data,
-    id: 'id_' + Date.now(),
-    createdAt: Date.now(),
-  };
+    const newItem = {
+        ...data,
+        id: 'id_' + Date.now(),
+        createdAt: Date.now(),
+    };
 
-  // 1. Always Save to LocalStorage (Backup/Fast UI)
-  const currentLocal = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  const updatedLocal = [newItem, ...currentLocal];
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLocal));
+    // 1. Simpan Lokal (Instant Feedback)
+    const currentLocal = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const updatedLocal = [newItem, ...currentLocal];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLocal));
 
-  // 2. Save to Cloud if connected
-  if (supabase) {
-    try {
-      await supabase.from('signages').insert({
-        id: newItem.id,
-        welcome_label: newItem.welcomeLabel,
-        guest_name: newItem.guestName,
-        sub_text: newItem.subText,
-        background_image: newItem.backgroundImage
-      });
-    } catch (e) {
-      console.error("Failed to save to cloud", e);
-      alert("Disimpan di Lokal saja (Gagal koneksi Cloud)");
+    // 2. Simpan Cloud (Fire and Forget)
+    if (supabase) {
+        supabase.from('signages').insert({
+            id: newItem.id,
+            welcome_label: newItem.welcomeLabel,
+            guest_name: newItem.guestName,
+            sub_text: newItem.subText,
+            background_image: newItem.backgroundImage
+        }).then(({ error }: any) => {
+            if(error) console.error("Cloud save failed:", error);
+        });
     }
-  }
 };
 
 export const deleteSignage = async (id: string) => {
-  // 1. Local Delete
-  const currentLocal = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  const newLocal = currentLocal.filter((item: SignageData) => item.id !== id);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(newLocal));
+    // 1. Hapus Lokal
+    const currentLocal = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    const newLocal = currentLocal.filter((item: SignageData) => item.id !== id);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(newLocal));
 
-  // 2. Cloud Delete
-  if (supabase) {
-    try {
-      await supabase.from('signages').delete().eq('id', id);
-    } catch (e) {
-      console.error("Failed to delete from cloud", e);
+    // 2. Hapus Cloud
+    if (supabase) {
+        supabase.from('signages').delete().eq('id', id).then(({ error }: any) => {
+             if(error) console.error("Cloud delete failed:", error);
+        });
     }
-  }
 };
