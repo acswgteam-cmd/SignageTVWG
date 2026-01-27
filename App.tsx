@@ -10,14 +10,21 @@ export default function App() {
   const [selectedSignage, setSelectedSignage] = useState<SignageData | null>(null);
   const [signageList, setSignageList] = useState<SignageData[]>([]);
 
+  // Function to load data properly
   const refreshData = async () => {
-    const data = await getSignages();
-    setSignageList(data);
+    try {
+      const data = await getSignages();
+      setSignageList(data || []);
+    } catch (e) {
+      console.error("Failed to load data", e);
+      setSignageList([]);
+    }
   };
 
   useEffect(() => {
     refreshData();
-    // Check URL params for "public" mode
+    
+    // Check URL params for "public" mode (untuk Smart TV)
     const params = new URLSearchParams(window.location.search);
     if (params.get('mode') === 'public') {
       setView('public');
@@ -30,7 +37,6 @@ export default function App() {
   };
 
   const handleBack = () => {
-    // If we came from public list, go back there
     const params = new URLSearchParams(window.location.search);
     if (params.get('mode') === 'public') {
       setView('public');
@@ -42,7 +48,6 @@ export default function App() {
   
   // Navigation Handlers
   const switchToPublic = () => {
-    // Update URL without reload to allow bookmarking
     const url = new URL(window.location.href);
     url.searchParams.set('mode', 'public');
     window.history.pushState({}, '', url);
