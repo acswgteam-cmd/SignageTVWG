@@ -1,74 +1,93 @@
 import { SignageData } from '../types';
+import { createClient } from '@supabase/supabase-js';
 
 const STORAGE_KEY = 'signage_list_v2';
-const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000;
+const SUPABASE_CONFIG_KEY = 'signage_supabase_config';
 
-export const getSignages = (): SignageData[] => {
+interface SupabaseConfig {
+  url: string;
+  key: string;
+}
+
+export const getSupabaseConfig = (): SupabaseConfig | null => {
+  const stored = localStorage.getItem(SUPABASE_CONFIG_KEY);
+  return stored ? JSON.parse(stored) : null;
+};
+
+export const saveSupabaseConfig = (config: SupabaseConfig) => {
+  localStorage.setItem(SUPABASE_CONFIG_KEY, JSON.stringify(config));
+  window.location.reload(); // Reload to initialize client
+};
+
+// Initialize Client if config exists
+let supabase: any = null;
+const config = getSupabaseConfig();
+if (config) {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return [];
-    
-    let parsed: any[] = JSON.parse(stored);
-    
-    // Validation and Fix pass
-    let hasChanges = false;
-    const now = Date.now();
-    
-    // Filter valid objects and assign IDs if missing
-    let validItems: SignageData[] = parsed.filter(item => item && typeof item === 'object').map(item => {
-        if (!item.id) {
-            hasChanges = true;
-            return { ...item, id: 'fix_' + Date.now().toString(36) + Math.random().toString(36).substring(2) };
-        }
-        return item as SignageData;
-    });
-
-    // Filter by time
-    const initialCount = validItems.length;
-    validItems = validItems.filter(item => {
-      const created = item.createdAt || now; 
-      return (now - created) < SEVEN_DAYS_MS;
-    });
-    
-    if (validItems.length !== initialCount) {
-        hasChanges = true;
-    }
-    
-    // Save back if we fixed IDs or cleaned up old items
-    if (hasChanges) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(validItems));
-    }
-    
-    // Sort by newest first
-    return validItems.sort((a, b) => b.createdAt - a.createdAt);
+    supabase = createClient(config.url, config.key);
   } catch (e) {
-    console.error("Storage error", e);
-    // If corruption, reset
-    localStorage.removeItem(STORAGE_KEY);
-    return [];
+    console.error("Failed to init Supabase", e);
+  }
+}
+
+export const getSignages = async (): Promise<SignageData[]> => {
+  // 1. Try Supabase
+  if (supabase) {
+    const { data, error } = await supabase
+      .from('signages')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (!error && data) {
+      // Map DB fields to App fields
+      return data.map((item: any) => ({
+        id: item.id,
+        createdAt: new Date(item.created_at).getTime(),
+        welcomeLabel: item.welcome_label,
+        guestName: item.guest_name,
+        subText: item.sub_text,
+        backgroundImage: item.background_image
+      }));
+    }
+  }
+
+  // 2. Fallback to LocalStorage
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (!stored) return [];
+  return JSON.parse(stored);
+};
+
+export const saveSignage = async (data: Omit<SignageData, 'id' | 'createdAt'>): Promise<void> => {
+  const newItem = {
+    ...data,
+    id: 'id_' + Date.now(),
+    createdAt: Date.now(),
+  };
+
+  // Local Save
+  const currentLocal = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  localStorage.setItem(STORAGE_KEY, JSON.stringify([newItem, ...currentLocal]));
+
+  // Cloud Save
+  if (supabase) {
+    await supabase.from('signages').insert({
+      id: newItem.id,
+      welcome_label: newItem.welcomeLabel,
+      guest_name: newItem.guestName,
+      sub_text: newItem.subText,
+      background_image: newItem.backgroundImage
+    });
   }
 };
 
-export const saveSignage = (data: Omit<SignageData, 'id' | 'createdAt'>): SignageData => {
-  const currentList = getSignages();
-  
-  // Create a robust unique ID
-  const uniqueId = 'id_' + Date.now().toString(36) + Math.random().toString(36).substring(2);
+export const deleteSignage = async (id: string) => {
+  // Local Delete
+  const currentLocal = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  const newLocal = currentLocal.filter((item: SignageData) => item.id !== id);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(newLocal));
 
-  const newItem: SignageData = {
-    ...data,
-    id: uniqueId,
-    createdAt: Date.now(),
-  };
-  
-  const newList = [newItem, ...currentList];
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(newList));
-  return newItem;
-};
-
-export const deleteSignage = (id: string) => {
-  const currentList = getSignages();
-  // Ensure we compare strings
-  const newList = currentList.filter(item => String(item.id) !== String(id));
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(newList));
+  // Cloud Delete
+  if (supabase) {
+    await supabase.from('signages').delete().eq('id', id);
+  }
 };
