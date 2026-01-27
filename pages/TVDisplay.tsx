@@ -307,7 +307,7 @@ export const TVDisplay: React.FC = () => {
                   return (
                     <div 
                         key={s.id}
-                        ref={(el) => itemRefs.current[index] = el}
+                        ref={(el) => { itemRefs.current[index] = el; }}
                         onClick={() => {
                             setFocusedIndex(index); // Update focus on click
                             isSelectionMode ? toggleSelection(s.id) : playSingle(s);
