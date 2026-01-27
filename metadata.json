@@ -1,0 +1,5 @@
+{
+  "name": "Werkudara Signage System",
+  "description": "A digital signage management system connected to Supabase. Features an editor for content management and a dedicated TV display mode with wake-lock functionality.",
+  "requestFramePermissions": []
+}
