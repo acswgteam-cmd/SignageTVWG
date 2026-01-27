@@ -19,7 +19,10 @@ export const TVDisplay: React.FC = () => {
     const initData = async () => {
       try {
         const data = await signageService.getAll();
-        setSignages(data);
+        // Filter only active signages for TV
+        // If is_active is undefined, assume true for backward compatibility
+        const activeData = data.filter(s => s.is_active !== false);
+        setSignages(activeData);
       } catch (err) {
         console.error(err);
         setError("Failed to load content from database.");
@@ -101,8 +104,8 @@ export const TVDisplay: React.FC = () => {
     return (
       <div className="h-screen w-screen bg-black flex flex-col items-center justify-center text-gray-500 p-8 text-center">
         <MonitorOff size={64} className="mb-6 opacity-50" />
-        <h1 className="text-2xl font-bold mb-2 text-white">No Signal</h1>
-        <p>{error || "No signages created in the dashboard yet."}</p>
+        <h1 className="text-2xl font-bold mb-2 text-white">No Active Content</h1>
+        <p>{error || "No items are marked as 'Show on TV' in the dashboard."}</p>
         <button 
             onClick={() => window.location.reload()}
             className="mt-8 px-6 py-2 border border-gray-700 rounded hover:bg-gray-900 transition-colors"
