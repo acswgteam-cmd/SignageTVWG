@@ -5,32 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Welcome Signage</title>
     
-    <!-- ERROR HANDLER -->
-    <script>
-      window.onerror = function(message, source, lineno, colno, error) {
-        // Only show error if it's not a resize observer loop error (benign)
-        if(message.includes('ResizeObserver')) return;
-        
-        const errorDiv = document.getElementById('error-display') || document.createElement('div');
-        errorDiv.id = 'error-display';
-        errorDiv.style.position = 'fixed';
-        errorDiv.style.top = '0';
-        errorDiv.style.left = '0';
-        errorDiv.style.width = '100%';
-        errorDiv.style.padding = '20px';
-        errorDiv.style.background = '#fee2e2';
-        errorDiv.style.color = '#991b1b';
-        errorDiv.style.zIndex = '9999';
-        errorDiv.style.fontFamily = 'monospace';
-        errorDiv.innerHTML = '<strong>System Error:</strong><br>' + message;
-        document.body.appendChild(errorDiv);
-        console.error(error);
-      };
-      
-      window.global = window;
-      window.process = { env: { NODE_ENV: 'production' } };
-    </script>
-
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -46,9 +20,27 @@
           }
         }
       }
+      
+      // Error Handler untuk Debugging di Layar
+      window.onerror = function(msg, source, line, col, error) {
+        // Abaikan error resize observer yang tidak berbahaya
+        if(msg && msg.includes && msg.includes('ResizeObserver')) return;
+        
+        var d = document.createElement("div");
+        d.style.position = "fixed";
+        d.style.top = "0";
+        d.style.left = "0";
+        d.style.width = "100%";
+        d.style.padding = "20px";
+        d.style.backgroundColor = "#fee2e2";
+        d.style.color = "#b91c1c";
+        d.style.zIndex = "10000";
+        d.innerHTML = "<strong>Error:</strong> " + msg;
+        document.body.appendChild(d);
+      };
     </script>
     
-    <!-- FIXED IMPORT MAP: Only React 18, Added Supabase -->
+    <!-- STRICT IMPORT MAP: HANYA REACT 18.2.0 -->
     <script type="importmap">
 {
   "imports": {
@@ -58,7 +50,7 @@
     "react-dom": "https://esm.sh/react-dom@18.2.0",
     "lucide-react": "https://esm.sh/lucide-react@0.263.1",
     "@supabase/supabase-js": "https://esm.sh/@supabase/supabase-js@2.39.3",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/"
+    "react-dom/": "https://esm.sh/react-dom@^19.2.4/"
   }
 }
 </script>
