@@ -121,5 +121,14 @@ export const backgroundService = {
     // Check duplication strictly by string is heavy, just insert.
     // Ideally we hash it, but for now simple insert.
     await supabase.from('saved_backgrounds').insert([{ image_data: imageData }]);
+  },
+
+  async deleteBackground(id: string) {
+    if (!supabase) return;
+    const { error } = await supabase
+      .from('saved_backgrounds')
+      .delete()
+      .eq('id', id);
+    if (error) throw error;
   }
 };
