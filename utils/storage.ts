@@ -10,8 +10,12 @@ interface SupabaseConfig {
 }
 
 export const getSupabaseConfig = (): SupabaseConfig | null => {
-  const stored = localStorage.getItem(SUPABASE_CONFIG_KEY);
-  return stored ? JSON.parse(stored) : null;
+  try {
+    const stored = localStorage.getItem(SUPABASE_CONFIG_KEY);
+    return stored ? JSON.parse(stored) : null;
+  } catch (e) {
+    return null;
+  }
 };
 
 export const saveSupabaseConfig = (config: SupabaseConfig) => {
@@ -22,38 +26,62 @@ export const saveSupabaseConfig = (config: SupabaseConfig) => {
 // Initialize Client if config exists
 let supabase: any = null;
 const config = getSupabaseConfig();
-if (config) {
+
+if (config && config.url && config.key) {
   try {
+    // Basic validation to prevent crash on empty strings
     supabase = createClient(config.url, config.key);
   } catch (e) {
     console.error("Failed to init Supabase", e);
+    // Fallback to null so app continues in offline mode
+    supabase = null;
   }
 }
 
 export const getSignages = async (): Promise<SignageData[]> => {
-  // 1. Try Supabase
+  let dataFromCloud: SignageData[] = [];
+  let useCloud = false;
+
+  // 1. Try Supabase if configured
   if (supabase) {
-    const { data, error } = await supabase
-      .from('signages')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (!error && data) {
-      // Map DB fields to App fields
-      return data.map((item: any) => ({
-        id: item.id,
-        createdAt: new Date(item.created_at).getTime(),
-        welcomeLabel: item.welcome_label,
-        guestName: item.guest_name,
-        subText: item.sub_text,
-        backgroundImage: item.background_image
-      }));
+    try {
+      const { data, error } = await supabase
+        .from('signages')
+        .select('*')
+        .order('created_at', { ascending: false });
+      
+      if (!error && data) {
+        useCloud = true;
+        dataFromCloud = data.map((item: any) => ({
+          id: item.id,
+          createdAt: new Date(item.created_at).getTime(),
+          welcomeLabel: item.welcome_label,
+          guest_name: item.guest_name, // Handle typo in DB column gracefully
+          guestName: item.guest_name || item.guestName, 
+          subText: item.sub_text,
+          backgroundImage: item.background_image
+        }));
+      }
+    } catch (err) {
+      console.warn("Supabase connection failed, falling back to local", err);
     }
   }
 
-  // 2. Fallback to LocalStorage
+  // If cloud worked, return cloud data
+  if (useCloud) return dataFromCloud;
+
+  // 2. Fallback to LocalStorage (Offline Mode)
   const stored = localStorage.getItem(STORAGE_KEY);
-  if (!stored) return [];
+  if (!stored) {
+    // Return sample data for first time user so screen isn't empty
+    return [{
+        id: 'sample_1',
+        createdAt: Date.now(),
+        welcomeLabel: 'SELAMAT DATANG',
+        guestName: 'Bapak Presiden',
+        subText: 'Kunjungan Kerja 2024'
+    }];
+  }
   return JSON.parse(stored);
 };
 
@@ -64,30 +92,40 @@ export const saveSignage = async (data: Omit<SignageData, 'id' | 'createdAt'>): 
     createdAt: Date.now(),
   };
 
-  // Local Save
+  // 1. Always Save to LocalStorage (Backup/Fast UI)
   const currentLocal = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-  localStorage.setItem(STORAGE_KEY, JSON.stringify([newItem, ...currentLocal]));
+  const updatedLocal = [newItem, ...currentLocal];
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedLocal));
 
-  // Cloud Save
+  // 2. Save to Cloud if connected
   if (supabase) {
-    await supabase.from('signages').insert({
-      id: newItem.id,
-      welcome_label: newItem.welcomeLabel,
-      guest_name: newItem.guestName,
-      sub_text: newItem.subText,
-      background_image: newItem.backgroundImage
-    });
+    try {
+      await supabase.from('signages').insert({
+        id: newItem.id,
+        welcome_label: newItem.welcomeLabel,
+        guest_name: newItem.guestName,
+        sub_text: newItem.subText,
+        background_image: newItem.backgroundImage
+      });
+    } catch (e) {
+      console.error("Failed to save to cloud", e);
+      alert("Disimpan di Lokal saja (Gagal koneksi Cloud)");
+    }
   }
 };
 
 export const deleteSignage = async (id: string) => {
-  // Local Delete
+  // 1. Local Delete
   const currentLocal = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
   const newLocal = currentLocal.filter((item: SignageData) => item.id !== id);
   localStorage.setItem(STORAGE_KEY, JSON.stringify(newLocal));
 
-  // Cloud Delete
+  // 2. Cloud Delete
   if (supabase) {
-    await supabase.from('signages').delete().eq('id', id);
+    try {
+      await supabase.from('signages').delete().eq('id', id);
+    } catch (e) {
+      console.error("Failed to delete from cloud", e);
+    }
   }
 };
