@@ -49,6 +49,8 @@ export const Editor: React.FC = () => {
             is_active: selected.is_active !== undefined ? selected.is_active : true,
             layout: selected.layout || 'landscape'
         });
+        // Scroll to top of editor on mobile when selecting
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     }
   }, [selectedId, signages]);
@@ -97,6 +99,7 @@ export const Editor: React.FC = () => {
             layout: formData.layout
           });
       }
+      alert('Content Saved Successfully!');
     } catch (error) {
       console.error('Error saving:', error);
       alert('Failed to save. Check your database connection.');
@@ -186,22 +189,30 @@ export const Editor: React.FC = () => {
   };
 
   const handleDeleteBackground = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+    e.stopPropagation(); // Stop click from triggering "select background"
+    e.preventDefault();
+    
+    if (!id) {
+        console.error("No ID found for background");
+        return;
+    }
+
     if (!confirm('Are you sure you want to delete this saved background?')) return;
     try {
         await backgroundService.deleteBackground(id);
         await fetchBackgrounds();
     } catch (e) {
         console.error("Failed to delete background", e);
+        alert("Failed to delete background. See console.");
     }
   };
 
   return (
-    <div className="flex h-screen bg-gray-200 p-4 md:p-8 gap-6 overflow-hidden font-sans relative">
+    <div className="flex flex-col md:flex-row min-h-screen md:h-screen bg-gray-200 font-sans relative">
       
       {/* Config Modal */}
       {showConfig && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
             <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-8">
                 <div className="flex items-center gap-3 mb-6 text-blue-900">
                     <Database size={32} />
@@ -221,8 +232,9 @@ export const Editor: React.FC = () => {
       )}
 
       {/* LEFT COLUMN: Input Form & Editor */}
-      <aside className="w-full md:w-1/3 lg:w-[450px] bg-white rounded-3xl shadow-xl flex flex-col overflow-hidden border border-gray-100 flex-shrink-0">
-        <div className="p-6 bg-gray-50 border-b border-gray-100 flex justify-between items-center">
+      {/* Changed to w-full on mobile, fixed width on desktop. Removed h-screen constraint for mobile to allow scrolling. */}
+      <aside className="w-full md:w-[450px] lg:w-[500px] bg-white md:rounded-r-3xl shadow-xl flex flex-col border-r border-gray-100 flex-shrink-0 z-20 md:h-full order-1 md:order-1">
+        <div className="p-4 md:p-6 bg-gray-50 border-b border-gray-100 flex justify-between items-center sticky top-0 z-30 md:static">
             <h2 className="text-xl font-bold text-gray-800 tracking-tight">{selectedId ? 'Edit Content' : 'Create New'}</h2>
             <div className="flex gap-2">
                 <button onClick={() => setShowConfig(true)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-full" title="Database"><Settings size={18} /></button>
@@ -232,7 +244,7 @@ export const Editor: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto custom-scrollbar">
             {/* Live Preview */}
-            <div className="p-6 pb-2">
+            <div className="p-4 md:p-6 pb-2">
                 <div className="flex justify-between items-center mb-3">
                     <label className="block text-xs font-bold text-gray-400 uppercase tracking-wider">Preview</label>
                     <div className="flex gap-2">
@@ -265,7 +277,7 @@ export const Editor: React.FC = () => {
                 
                 {/* Preview Box - Dynamic Aspect Ratio */}
                 <div 
-                    className={`mx-auto bg-gray-900 rounded-xl overflow-hidden shadow-lg border-4 border-gray-800 relative group transition-all duration-300 ${formData.layout === 'portrait' ? 'aspect-[9/16] w-[200px]' : 'aspect-video w-full'}`}
+                    className={`mx-auto bg-gray-900 rounded-xl overflow-hidden shadow-lg border-4 border-gray-800 relative group transition-all duration-300 ${formData.layout === 'portrait' ? 'aspect-[9/16] w-[180px] md:w-[200px]' : 'aspect-video w-full'}`}
                 >
                      <div className={`w-full h-full relative ${formData.layout === 'portrait' ? 'overflow-hidden' : ''}`}>
                          {formData.layout === 'landscape' ? (
@@ -288,7 +300,7 @@ export const Editor: React.FC = () => {
             </div>
 
             {/* Inputs */}
-            <div className="p-6 space-y-5">
+            <div className="p-4 md:p-6 space-y-5">
                 <div>
                     <label className="block text-sm font-semibold text-gray-700 mb-2">Welcome Label</label>
                     <input 
@@ -350,7 +362,7 @@ export const Editor: React.FC = () => {
                             <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Saved Backgrounds</p>
                             <div className="grid grid-cols-4 gap-2">
                                 {savedBackgrounds.map(bg => (
-                                    <div key={bg.id} className="relative group">
+                                    <div key={bg.id} className="relative group cursor-pointer">
                                         <button
                                             onClick={() => setFormData(p => ({...p, background_image: bg.image_data}))}
                                             className="w-full aspect-video rounded-lg overflow-hidden border border-gray-200 hover:border-blue-500 hover:ring-2 ring-blue-200 transition-all"
@@ -359,10 +371,10 @@ export const Editor: React.FC = () => {
                                         </button>
                                         <button 
                                             onClick={(e) => handleDeleteBackground(bg.id, e)}
-                                            className="absolute -top-1 -right-1 bg-red-500 text-white p-1 rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:scale-110"
+                                            className="absolute -top-2 -right-2 bg-red-600 text-white p-1.5 rounded-full shadow-md z-10 opacity-100 hover:scale-110 active:scale-95 transition-all"
                                             title="Delete background"
                                         >
-                                            <X size={10} />
+                                            <X size={12} strokeWidth={3} />
                                         </button>
                                     </div>
                                 ))}
@@ -374,11 +386,11 @@ export const Editor: React.FC = () => {
         </div>
 
         {/* Footer Actions */}
-        <div className="p-6 bg-white border-t border-gray-100 space-y-3">
+        <div className="p-4 md:p-6 bg-white border-t border-gray-100 space-y-3 sticky bottom-0 z-30">
              <button 
                 onClick={handleSave}
                 disabled={isSaving || isProcessingImg}
-                className="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all"
+                className="w-full bg-blue-700 hover:bg-blue-800 text-white font-bold py-4 rounded-xl shadow-lg flex items-center justify-center gap-2 transition-all active:scale-[0.98]"
              >
                  {isSaving ? <Loader2 className="animate-spin" size={20} /> : <Save size={20} />}
                  {selectedId ? 'UPDATE CONTENT' : 'SAVE NEW CONTENT'}
@@ -395,11 +407,12 @@ export const Editor: React.FC = () => {
       </aside>
 
       {/* RIGHT COLUMN: Thumbnails Grid */}
-      <main className="flex-1 flex flex-col overflow-hidden">
-        <div className="mb-6 flex justify-between items-end">
+      {/* On mobile, this is below the editor (order-2). On desktop, it takes remaining space. */}
+      <main className="flex-1 flex flex-col order-2 md:order-2 overflow-hidden bg-gray-200 md:bg-transparent min-h-[500px]">
+        <div className="p-4 md:p-8 md:pb-0 mb-2 md:mb-6 flex justify-between items-end">
             <div>
-                <h1 className="text-3xl font-bold text-gray-800">Signage Gallery</h1>
-                <p className="text-gray-500 mt-1">Items older than 7 days are automatically removed.</p>
+                <h1 className="text-2xl md:text-3xl font-bold text-gray-800">Signage Gallery</h1>
+                <p className="text-gray-500 mt-1 text-xs md:text-sm">Items older than 7 days are automatically removed.</p>
             </div>
             <div className="text-sm font-medium text-gray-500">{signages.length} Items</div>
         </div>
@@ -409,7 +422,7 @@ export const Editor: React.FC = () => {
              <Loader2 className="animate-spin text-gray-400" size={48} />
            </div>
         ) : (
-            <div className="flex-1 overflow-y-auto pr-2 custom-scrollbar pb-8">
+            <div className="flex-1 overflow-y-auto px-4 md:px-8 custom-scrollbar pb-20 md:pb-8">
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-6">
                     {/* Create New Card */}
                     <div 
