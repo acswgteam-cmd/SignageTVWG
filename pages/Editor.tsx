@@ -189,7 +189,7 @@ export const Editor: React.FC = () => {
   };
 
   const handleDeleteBackground = async (id: string, e: React.MouseEvent) => {
-    e.stopPropagation(); // Stop click from triggering "select background"
+    e.stopPropagation(); 
     e.preventDefault();
     
     if (!id) {
@@ -198,12 +198,21 @@ export const Editor: React.FC = () => {
     }
 
     if (!confirm('Are you sure you want to delete this saved background?')) return;
+
+    // Optimistic Update: Remove locally first for instant feedback
+    const previousState = [...savedBackgrounds];
+    setSavedBackgrounds(prev => prev.filter(bg => bg.id !== id));
+
     try {
         await backgroundService.deleteBackground(id);
-        await fetchBackgrounds();
+        // If success, we don't need to do anything as local state is already updated
+        // But we fetch to ensure sync in case other clients added stuff
+        fetchBackgrounds();
     } catch (e) {
         console.error("Failed to delete background", e);
-        alert("Failed to delete background. See console.");
+        // Rollback on error
+        setSavedBackgrounds(previousState);
+        alert("Failed to delete background. Please check connection.");
     }
   };
 
@@ -362,16 +371,16 @@ export const Editor: React.FC = () => {
                             <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">Saved Backgrounds</p>
                             <div className="grid grid-cols-4 gap-2">
                                 {savedBackgrounds.map(bg => (
-                                    <div key={bg.id} className="relative group cursor-pointer">
+                                    <div key={bg.id} className="relative group cursor-pointer rounded-lg overflow-hidden border border-gray-200 hover:border-blue-500 hover:ring-2 ring-blue-200 transition-all">
                                         <button
                                             onClick={() => setFormData(p => ({...p, background_image: bg.image_data}))}
-                                            className="w-full aspect-video rounded-lg overflow-hidden border border-gray-200 hover:border-blue-500 hover:ring-2 ring-blue-200 transition-all"
+                                            className="w-full aspect-video block"
                                         >
                                             <img src={bg.image_data} className="w-full h-full object-cover" alt="bg" />
                                         </button>
                                         <button 
                                             onClick={(e) => handleDeleteBackground(bg.id, e)}
-                                            className="absolute -top-2 -right-2 bg-red-600 text-white p-1.5 rounded-full shadow-md z-10 opacity-100 hover:scale-110 active:scale-95 transition-all"
+                                            className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white p-1.5 rounded-full shadow-md z-20 opacity-0 group-hover:opacity-100 transition-opacity"
                                             title="Delete background"
                                         >
                                             <X size={12} strokeWidth={3} />
