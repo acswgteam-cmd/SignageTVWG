@@ -10,8 +10,9 @@ export default function App() {
   const [selectedSignage, setSelectedSignage] = useState<SignageData | null>(null);
   const [signageList, setSignageList] = useState<SignageData[]>([]);
 
-  const refreshData = () => {
-    setSignageList(getSignages());
+  const refreshData = async () => {
+    const data = await getSignages();
+    setSignageList(data);
   };
 
   useEffect(() => {
