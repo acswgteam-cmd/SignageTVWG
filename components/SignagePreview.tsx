@@ -23,12 +23,11 @@ export const SignagePreview: React.FC<SignagePreviewProps> = ({ data, className 
   const sub = data.sub_text || '';
 
   // Dynamic Font Sizing Logic using CQW (Container Query Width)
-  // This ensures text scales relative to the box size, not the screen size.
-  // Perfect for thumbnail previews.
+  // We increased these values to ensure text remains legible on small mobile previews
   const getNameSize = (text: string, isPortrait: boolean) => {
     const len = text.length;
     if (isPortrait) {
-        // Vertical Layout (Base width relative is narrower, so percentages are higher)
+        // Vertical Layout
         if (len > 80) return 'text-[4cqw] leading-tight';
         if (len > 50) return 'text-[5cqw] leading-snug';
         if (len > 30) return 'text-[7cqw] leading-tight';
@@ -38,20 +37,20 @@ export const SignagePreview: React.FC<SignagePreviewProps> = ({ data, className 
         // Landscape Layout
         if (len > 100) return 'text-[2.5cqw] leading-tight';
         if (len > 60) return 'text-[3.5cqw] leading-tight';
-        if (len > 30) return 'text-[4.5cqw] leading-tight';
-        if (len > 15) return 'text-[6cqw]';
-        return 'text-[7cqw]';
+        if (len > 30) return 'text-[5cqw] leading-tight';
+        if (len > 15) return 'text-[6.5cqw]';
+        return 'text-[8cqw]';
     }
   };
 
   const getSubSize = (text: string, isPortrait: boolean) => {
     const len = text.length;
     if (isPortrait) {
-         if (len > 80) return 'text-[2cqw] px-4';
-         return 'text-[3.5cqw] px-4';
+         if (len > 80) return 'text-[2.5cqw] px-4';
+         return 'text-[4cqw] px-4';
     } else {
-         if (len > 100) return 'text-[1.5cqw]';
-         return 'text-[2.5cqw]';
+         if (len > 100) return 'text-[2cqw]';
+         return 'text-[3cqw]';
     }
   };
 
@@ -71,8 +70,8 @@ export const SignagePreview: React.FC<SignagePreviewProps> = ({ data, className 
         
         {/* Main Text Content */}
         <div className="text-center flex-grow flex flex-col justify-center w-full max-h-full">
-          {/* Welcome Label */}
-          <h2 className={`font-light tracking-[0.3em] uppercase opacity-90 drop-shadow-lg shrink-0 ${isPortrait ? 'text-[2.5cqw] mb-[4cqw]' : 'text-[1.8cqw] mb-[2cqw]'}`}>
+          {/* Welcome Label - Increased size for better visibility */}
+          <h2 className={`font-light tracking-[0.3em] uppercase opacity-90 drop-shadow-lg shrink-0 ${isPortrait ? 'text-[4cqw] mb-[3cqw]' : 'text-[3cqw] mb-[2cqw]'}`}>
             {data.welcome_label || 'WELCOME'}
           </h2>
           
