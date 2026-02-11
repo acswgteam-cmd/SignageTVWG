@@ -100,9 +100,10 @@ export const Editor: React.FC = () => {
           });
       }
       alert('Content Saved Successfully!');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error saving:', error);
-      alert('Failed to save. Check your database connection.');
+      // Detailed error message to help user debug
+      alert(`Failed to save: ${error.message || error.error_description || 'Check your database connection and schema.'}`);
     } finally {
       setIsSaving(false);
     }
