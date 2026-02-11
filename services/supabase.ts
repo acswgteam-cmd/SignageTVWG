@@ -40,6 +40,17 @@ export const clearSupabaseConfig = () => {
 
 export const isSupabaseConfigured = () => !!supabase;
 
+// Helper to generate UUIDs compatible with older browsers/HTTP
+function generateUUID() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 export const signageService = {
   // DELETE items older than 7 days
   async cleanupOldSignages() {
@@ -70,11 +81,15 @@ export const signageService = {
   async create(signage: SignageInsert) {
     if (!supabase) throw new Error("Supabase not configured");
     
-    // Changed: Rely on Database to generate ID (gen_random_uuid())
-    // This avoids issues with crypto.randomUUID() in non-secure contexts (HTTP)
+    // Generate ID client-side.
+    // This fixes "null value in column id" error if the DB doesn't have a default value set.
+    // Also includes a polyfill for HTTP contexts where crypto.randomUUID is missing.
+    const newId = generateUUID();
+    const payload = { ...signage, id: newId };
+
     const { data, error } = await supabase
       .from('signages')
-      .insert([signage])
+      .insert([payload])
       .select()
       .single();
     
