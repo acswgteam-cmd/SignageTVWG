@@ -75,9 +75,6 @@ export const SignagePreview: React.FC<SignagePreviewProps> = ({ data, className 
             {data.welcome_label || 'WELCOME'}
           </h2>
           
-          {/* Separator Line */}
-          <div className={`bg-white/50 mx-auto rounded-full shadow-sm shrink-0 ${isPortrait ? 'w-[15cqw] h-[0.4cqw] mb-[4cqw]' : 'w-[8cqw] h-[0.3cqw] mb-[3cqw]'}`}></div>
-          
           {/* Guest Name - Dynamic Sizing */}
           <h1 className={`font-bold tracking-wide drop-shadow-2xl text-center break-words max-w-[90cqw] mx-auto ${nameSizeClass}`}>
             {name}
