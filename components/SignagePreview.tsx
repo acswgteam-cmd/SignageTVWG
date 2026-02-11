@@ -19,11 +19,12 @@ export const SignagePreview: React.FC<SignagePreviewProps> = ({ data, className 
     containerType: 'inline-size', // Enable Container Queries
   };
 
-  const name = data.guest_name || 'Guest Name';
-  const sub = data.sub_text || '';
+  // Remove default fallbacks so they can be hidden if empty
+  const name = data.guest_name;
+  const sub = data.sub_text;
+  const welcome = data.welcome_label;
 
   // Dynamic Font Sizing Logic using CQW (Container Query Width)
-  // We increased these values to ensure text remains legible on small mobile previews
   const getNameSize = (text: string, isPortrait: boolean) => {
     const len = text.length;
     if (isPortrait) {
@@ -54,8 +55,8 @@ export const SignagePreview: React.FC<SignagePreviewProps> = ({ data, className 
     }
   };
 
-  const nameSizeClass = getNameSize(name, isPortrait);
-  const subSizeClass = getSubSize(sub, isPortrait);
+  const nameSizeClass = name ? getNameSize(name, isPortrait) : '';
+  const subSizeClass = sub ? getSubSize(sub, isPortrait) : '';
 
   return (
     <div 
@@ -70,17 +71,21 @@ export const SignagePreview: React.FC<SignagePreviewProps> = ({ data, className 
         
         {/* Main Text Content */}
         <div className="text-center flex-grow flex flex-col justify-center w-full max-h-full">
-          {/* Welcome Label - Increased size for better visibility */}
-          <h2 className={`font-light tracking-[0.3em] uppercase opacity-90 drop-shadow-lg shrink-0 ${isPortrait ? 'text-[4cqw] mb-[3cqw]' : 'text-[3cqw] mb-[2cqw]'}`}>
-            {data.welcome_label || 'WELCOME'}
-          </h2>
+          {/* Welcome Label - Conditional Render */}
+          {welcome && (
+            <h2 className={`font-light tracking-[0.3em] uppercase opacity-90 drop-shadow-lg shrink-0 ${isPortrait ? 'text-[4cqw] mb-[3cqw]' : 'text-[3cqw] mb-[2cqw]'}`}>
+                {welcome}
+            </h2>
+          )}
           
-          {/* Guest Name - Dynamic Sizing */}
-          <h1 className={`font-bold tracking-wide drop-shadow-2xl text-center break-words max-w-[90cqw] mx-auto ${nameSizeClass}`}>
-            {name}
-          </h1>
+          {/* Guest Name - Conditional Render */}
+          {name && (
+            <h1 className={`font-bold tracking-wide drop-shadow-2xl text-center break-words max-w-[90cqw] mx-auto ${nameSizeClass}`}>
+                {name}
+            </h1>
+          )}
           
-          {/* Sub Text - Dynamic Sizing */}
+          {/* Sub Text - Conditional Render */}
           {sub && (
              <h3 className={`font-medium opacity-90 max-w-[80cqw] mx-auto leading-relaxed drop-shadow-lg mt-[1.5cqw] ${subSizeClass}`}>
                {sub}
